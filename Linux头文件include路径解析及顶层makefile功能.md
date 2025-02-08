@@ -496,8 +496,8 @@ LINUXINCLUDE    := \
 
 *   **`KBUILD_EXTMOD`**: 未定义
 *   **`KBUILD_OUTPUT` 或 `O`**: 已定义
-*   **`srcroot`**: 未定义
-*   **`objtree`**: `$(KBUILD_OUTPUT)` 的绝对路径
+*   **`srcroot`**: 顶层makefile路径
+*   **`objtree`**: . 也就是当前makefile运行的路径
 *   **`srctree`**: 顶层 Makefile 所在目录
 
 在这种情况下，`LINUXINCLUDE` 变为：
@@ -505,9 +505,9 @@ LINUXINCLUDE    := \
 ```makefile
 LINUXINCLUDE    := \
         -I<顶层Makefile目录>/arch/$(SRCARCH)/include \
-        -I<输出目录>/arch/$(SRCARCH)/include/generated \
+        -I<当前makefile运行的路径>/arch/$(SRCARCH)/include/generated \
         -I<顶层Makefile目录>/include \
-        -I<输出目录>/include \
+        -I<当前makefile运行的路径>/include \
         $(USERINCLUDE)
 ```
 
@@ -516,7 +516,7 @@ LINUXINCLUDE    := \
 *   **`KBUILD_EXTMOD`**: 已定义
 *   **`KBUILD_OUTPUT` 或 `O`**: 未定义
 *   **`srcroot`**: `$(KBUILD_EXTMOD)` 的绝对路径
-*   **`objtree`**: `$(KBUILD_EXTMOD)` 的绝对路径 (这里内核代码为了向后兼容有些复杂, 但总之是外部模块的绝对路径)
+*   **`objtree`**: 顶层makefile路径
 *   **`srctree`**: `$(KBUILD_EXTMOD)` 的绝对路径
 
 在这种情况下，`LINUXINCLUDE` 变为：
@@ -524,9 +524,9 @@ LINUXINCLUDE    := \
 ```makefile
 LINUXINCLUDE    := \
         -I<外部模块目录>/arch/$(SRCARCH)/include \
-        -I<外部模块目录>/arch/$(SRCARCH)/include/generated \
+        -I<顶层makefile路径>/arch/$(SRCARCH)/include/generated \
         -I<外部模块目录>/include \
-        -I<外部模块目录>/include \
+        -I<顶层makefile路径>/include \
         $(USERINCLUDE)
 ```
 
