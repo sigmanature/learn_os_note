@@ -1,5 +1,5 @@
 # 匿名页概念
-
+[stackoverflow相关帖子](https://stackoverflow.com/questions/77085631/what-is-the-struct-address-space-that-backs-a-anonymous-memory-page)
 
 ## 用户:
 linux 中的anonymous page是什么概念?
