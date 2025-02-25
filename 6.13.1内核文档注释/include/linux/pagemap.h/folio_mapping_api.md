@@ -32,7 +32,7 @@ max的值是为'MAX_PAGECACHE_ORDER'
 ```C
 #define MAX_PAGECACHE_ORDER	min(MAX_XAS_ORDER, PREFERRED_MAX_PAGECACHE_ORDER)
 ```
-这个值不是7就是8。'(max << AS_FOLIO_ORDER_MAX)'刚好就占了25位。
+这个值不是7就是8。' (max << AS_FOLIO_ORDER_MAX) '刚好就占了25位。
 '(mapping->flags & ~AS_FOLIO_ORDER_MASK) |
 		(min << AS_FOLIO_ORDER_MIN) | (max << AS_FOLIO_ORDER_MAX)'最终的值实际上就是
 flags的16到25位只设置了最大的order。比如8是1000 左移21位就是1后面24个0
