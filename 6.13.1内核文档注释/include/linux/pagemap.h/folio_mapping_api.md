@@ -25,7 +25,7 @@ static inline void mapping_set_folio_order_range(struct address_space *mapping,
 ```
 AS_FOLIO_ORDER_MIN和AS_FOLIO_ORDER_MAX是定义在pagemap.h中enum mapping_flags中的标志位
 前者是16后者是21。内核注释中提到address_space的flags中16到25位用于标志folios的order。
-'mapping_set_large_folios'由于调用'mapping_set_folio_order_range'中传的min是0因此
+'mapping_set_large_folios'由于调用' mapping_set_folio_order_range '中传的min是0因此
 '(min << AS_FOLIO_ORDER_MIN)'直接就是0。然后'(max << AS_FOLIO_ORDER_MAX)'
 max的值是为'MAX_PAGECACHE_ORDER'
 其定义是
