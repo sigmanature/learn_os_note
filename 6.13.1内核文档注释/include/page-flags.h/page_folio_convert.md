@@ -1,3 +1,4 @@
+
 <p>
 ```C
 static __always_inline unsigned long _compound_head(const struct page *page)
@@ -14,6 +15,7 @@ static __always_inline unsigned long _compound_head(const struct page *page)
 因此如果传进去的就是head page那么直接返回自己。(但是地址被以unsigned long的形式返回回来了)。
 如果不是的话结果会直接返回page->compound_head-1。那么因此有理由推测page->compound_head字段应该是tail page用来保存head page地址但是最后一个bit始终多了1。
 </p>
+
 <p>
 ```C
 #define compound_head(page)	((typeof(page))_compound_head(page)):
