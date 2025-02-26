@@ -17,12 +17,12 @@ static __always_inline unsigned long _compound_head(const struct page *page)
 ```C
 #define compound_head(page)	((typeof(page))_compound_head(page)):
 ```
-- #define compound_head(page)	((typeof(page))_compound_head(page))
-- #define compound_head(page) ...: 定义一个宏 compound_head。
-- ((typeof(page))_compound_head(page)): 宏展开。
-- _compound_head(page): 调用我们刚刚分析的 _compound_head 函数。
-- (typeof(page)): 获取输入 page 参数的类型。 如果 page 的类型为 struct page *，则 typeof(page) 为 struct page *。
-- ((typeof(page)) ...): 将 _compound_head(page) 的结果强制转换为与输入 page 相同的类型。 由于 _compound_head 返回 unsigned long，因此此强制转换将其转换回 struct page *（或 const struct page *，具体取决于输入 page 类型）。
+- `#define compound_head(page)	((typeof(page))_compound_head(page))`
+- `#define compound_head(page) ...`: 定义一个宏 compound_head。
+- `((typeof(page))_compound_head(page))`: 宏展开。
+- `_compound_head(page)`: 调用我们刚刚分析的 _compound_head 函数。
+- `(typeof(page))`: 获取输入 page 参数的类型。 如果 page 的类型为 struct page *，则 typeof(page) 为 struct page *。
+- `((typeof(page)) ...)`: 将 _compound_head(page) 的结果强制转换为与输入 page 相同的类型。 由于 _compound_head 返回 unsigned long，因此此强制转换将其转换回 struct page *（或 const struct page *，具体取决于输入 page 类型）。
 compound_head 的目的:
 
 此宏提供了一种类型安全的方式来获取复合页面（或 folio）的头页面。 它本质上包装了 _compound_head 函数，并确保返回类型与输入页面类型匹配。 这对于类型正确性以及避免在不同上下文中使用宏时出现编译器警告或错误非常重要。
