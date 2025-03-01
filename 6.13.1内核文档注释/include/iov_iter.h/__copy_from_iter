@@ -1,0 +1,85 @@
+```C
+static __always_inline
+size_t __copy_from_iter(void *addr, size_t bytes, struct iov_iter *i)
+{
+	return iterate_and_advance(i, bytes, addr,
+				   copy_from_user_iter, memcpy_from_iter);
+}
+```
+仅仅返回iterate_and_advance的结果,但是往里面传了两个迭代函数进去。
+```C
+/**
+ * iterate_and_advance - Iterate over an iterator
+ * @iter: The iterator to iterate over.
+ * @len: The amount to iterate over.
+ * @priv: Data for the step functions.
+ * @ustep: Function for UBUF/IOVEC iterators; given __user addresses.
+ * @step: Function for other iterators; given kernel addresses.
+ *
+ * As iterate_and_advance2(), but priv2 is always NULL.
+ */
+static __always_inline
+size_t iterate_and_advance(struct iov_iter *iter, size_t len, void *priv,
+			   iov_ustep_f ustep, iov_step_f step)
+{
+	return iterate_and_advance2(iter, len, priv, NULL, ustep, step);
+}
+/**
+ * iterate_and_advance2 - Iterate over an iterator
+ * @iter: The iterator to iterate over.
+ * @len: The amount to iterate over.
+ * @priv: Data for the step functions.
+ * @priv2: More data for the step functions.
+ * @ustep: Function for UBUF/IOVEC iterators; given __user addresses.
+ * @step: Function for other iterators; given kernel addresses.
+ *
+ * Iterate over the next part of an iterator, up to the specified length.  The
+ * buffer is presented in segments, which for kernel iteration are broken up by
+ * physical pages and mapped, with the mapped address being presented.
+ *
+ * Two step functions, @step and @ustep, must be provided, one for handling
+ * mapped kernel addresses and the other is given user addresses which have the
+ * potential to fault since no pinning is performed.
+ *
+ * The step functions are passed the address and length of the segment, @priv,
+ * @priv2 and the amount of data so far iterated over (which can, for example,
+ * be added to @priv to point to the right part of a second buffer).  The step
+ * functions should return the amount of the segment they didn't process (ie. 0
+ * indicates complete processsing).
+ *
+ * This function returns the amount of data processed (ie. 0 means nothing was
+ * processed and the value of @len means processes to completion).
+ */
+static __always_inline
+size_t iterate_and_advance2(struct iov_iter *iter, size_t len, void *priv,
+			    void *priv2, iov_ustep_f ustep, iov_step_f step)
+{
+	if (unlikely(iter->count < len))
+		len = iter->count;
+	if (unlikely(!len))
+		return 0;
+
+	if (likely(iter_is_ubuf(iter)))
+		return iterate_ubuf(iter, len, priv, priv2, ustep);
+	if (likely(iter_is_iovec(iter)))
+		return iterate_iovec(iter, len, priv, priv2, ustep);
+	if (iov_iter_is_bvec(iter))
+		return iterate_bvec(iter, len, priv, priv2, step);
+	if (iov_iter_is_kvec(iter))
+		return iterate_kvec(iter, len, priv, priv2, step);
+	if (iov_iter_is_folioq(iter))
+		return iterate_folioq(iter, len, priv, priv2, step);
+	if (iov_iter_is_xarray(iter))
+		return iterate_xarray(iter, len, priv, priv2, step);
+	return iterate_discard(iter, len, priv, priv2, step);
+}
+```
+`iterate_and_advance`函数内部调用`iterate_and_advance2`但是`priv2`传进去的是空的。<br>
+那意味着只有`priv1`会被作为迭代函数使用的数据。在`__copy_from_iter`的视角来看的话, <br>
+那`priv1`就是`addr`。在`iterate_and_advance2`函数中可以看到并不是两个迭代函数都被使用了。<br>
+实际上一个迭代函数是用于处理用户空间数据的,另一个是用于处理内核空间数据的。`advnace2`会根据迭代器的不同类型选择使用哪个迭代函数。<br>
+我们先分析内核的情况(比如`copy_page_from_iter`函数中传入的页面是`page cache`的情况 页面较大概率是内核区的数据)
+那么我们来分析`iterate_kvec`分支
+```C
+
+```
