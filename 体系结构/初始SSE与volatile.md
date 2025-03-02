@@ -944,3 +944,156 @@ Microsoft 编译器将 `volatile` 访问视为一个警告，告诉编译器在�
 希望这个详细的梳理和分析能够帮助您理解 Stack Overflow 答案和评论的讨论内容，以及 `volatile` 关键字在 C++ 中的复杂性和不同编译器的实现差异。
 
 > provided by [EasyChat](https://site.eqing.tech/)
+
+# 
+C++ volatile和原子操作
+
+## 用户:
+refrain from making assumptions about how any preceding actions on any objects would interact with later actions Hmm, I thought C++ 11 memory model solved this issue. – 
+Empty Space
+ CommentedOct 5, 2019 at 21:58 
+4
+Volatile is essential for things like reading from the same address mapped to IO multiple times in a row. IO devices may be set up to clock in sequential data chunks on each read and w/o volatile a program can assume that reading from the same address not otherwise modified by the program will not change value. It should not be used for multithreading which has related, but not identical semantics. – 
+doug
+ CommentedOct 5, 2019 at 22:19
+@doug: Can C++11 atomics be fully supported in conforming fashion by freestanding implementations that don't know about any OS that might be used on the target? – 
+supercat
+ CommentedOct 5, 2019 at 22:27
+@doug: Are you saying that the authors of the Standard were wrong when they wrote the above quote? – 
+supercat
+ CommentedOct 5, 2019 at 22:28
+You might want to attribute the source of "[according to the authors of the Standard, "A volatile object is also an appropriate model for a variable shared among multiple processes."]". There is no such statement in any of the C++ standards. Bear in mind that a significant amount of older Microsoft documentation (less so with current documentation) described Microsoft-specific features as being standard C++. – 
+Peter
+ CommentedOct 5, 2019 at 23:05
+@Peter: Citation added. – 
+supercat
+ CommentedOct 5, 2019 at 23:10
+@supercat. Atomics with mutexes, and volatile have different semantics. Microsoft's compilers have an option that enables/disables functionality that makes them useful for multithreading or narrows the semantics. Volatile remains useful for I/O and voids the assumption, useful in optimization, that multiple reads from the same address will return the same value for either option in the Microsoft compiler. – 
+doug
+ CommentedOct 5, 2019 at 23:11
+1
+@doug: Microsoft's compilers predated the C and C++ Standards, and nothing in the published Rationale for the Standard indicates any intention that implementations for similar platforms shouldn't be expected to continue behaving as existing compilers for such platforms did in the days before the Standard. – 
+supercat
+ CommentedOct 5, 2019 at 23:14
+2
+@supercat, Yes, that isn't the C++11 or greater standard. it's an early C standard and one I wrote a lot of code for at the time. Modern C++ had to address issues due to cache layers and multiple CPUs that earlier C and C++ standards using only volatile were inadequate for without impairing efficiency. A good thing IMO. OTOH, I've never had code that had race condition problems using C++11 or higher and multicore hardware. Volatile alone just doesn't cut it in these environments. At least without impairing performance which the default Microsoft does. – 
+doug
+ CommentedOct 5, 2019 at 23:25 
+@doug: What is the advantage of weakening the meaning of an existing keyword and breaking existing code, versus adding a syntax that would waive some semantic guarantees? – 
+supercat
+ CommentedOct 5, 2019 at 23:35
+@doug: Also, would the C++ Standard allow freestanding implementations for all platforms to support atomics in an OS-agnostic fashion? From what I can tell, at least the C Standard would require that OS-agnostic freestanding implementations accept code that attempts atomic operations on all types, even though on many environments it would be impossible for an OS-agnostic implementation to do so usefully. – 
+supercat
+ CommentedOct 5, 2019 at 23:39
+@supercat Existing code? C++ had no concept of multithreading. It did have a concept of how optimization could remove seemingly redundant reads/writes in a single thread of execution. That's what volatile addressed. Multithreading was done outside the C++ specification until C++11 by compiler extensions and OS specific functions. – 
+doug
+ CommentedOct 5, 2019 at 23:40
+Accepting for the first part of the answer. I am still not convinced about the last part because of the ongoing discussion and also that C standard was referenced and not C++. Although C++ inherits volatile from C, its meaning may have changed post C++ 11. – 
+Empty Space
+ CommentedOct 6, 2019 at 6:36 
+@doug: People have been writing C code which involved interactions between asynchronous execution contexts since before the first C Standard was published, and even before the volatile keyword was invented. The C language does not provide any mechanism by which such contexts may be created, but many execution environments do. Prior to the introduction of volatile, implementations intended to be suitable for use with such code couldn't do much optimization, but the volatile keyword was added as a simple means of making such code compatible with reasonable optimizations. – 
+supercat
+ CommentedOct 6, 2019 at 18:29
+1
+@doug: In many cases, compilers didn't need volatile as an indication that they should behave cautiously around code that used I/O registers, since such code would often access pointers that were freshly cast from integers. Since programs would seldom form pointers from integers except in situations that involved doing something "weird", a compiler that made no effort to infer anything about the provenance of such pointers would naturally handle I/O registers just fine even without volatile. – 
+supercat
+ CommentedOct 6, 2019 at 18:33
+1
+@TrickorTreat: The authors of the C89 Standard didn't think it necessary to specify that implementations intended for various purposes should provide volatile semantics suitable for those purpose because it seemed obvious. Adding more detail to later standards would have required a consensus, which was blocked by compiler writers who failed to accept things the C89 Committee had thought obvious enough to go without saying. – 
+supercat
+ CommentedOct 6, 2019 at 18:44
+@supercat Right. Good history of the way C/C++ had workarounds based on use cases and not pure language specs. The newer language now includes a set of tools for creating efficient, multi-threaded code, and handling mem mapped IO w/o assumptions about what the compiler will do. More portable. OTOH, I've written a lot of code with pre-standard C/C++. The first step was always to understand the compiler and do any workarounds if needed. Not a big problem but one that is no longer needed in most cases. – 
+doug
+ CommentedOct 6, 2019 at 19:20
+1
+@doug: What I find annoying (and IMHO indefensible) is the way the maintainers of clang and gcc assume the purpose of the Standard was to deprecate pre-standard ways of accomplishing things for which support wasn't mandated, despite the fact that the authors of the Standard have expressly stated that they did not intend to demean programs that were useful but happened not to be portable. A compiler with a simple optimizer that was extremely cautious around places where there was evidence of "strangeness" would be much more useful than one with a fancier optimizer that has to be disabled. – 
+supercat
+ CommentedOct 6, 2019 at 21:13
+1
+@supercat True. There's a lot of old code that takes advantage of compiler smarts. Even though the language didn't specifically support multithreading C++ was still heavily used. People learned what their compilers did and found ways to accomplish goals. I guess it's up to the compiler maintainers to evolve things based on their user's needs. Microsoft's user base has a ton of these older code bases. Probably why their volatile has expanded semantics unless one opts for the more limited. GCC Clang, etc. could support this too, and make things easier for porting old bases. Oh well. – 
+doug
+ CommentedOct 6, 2019 at 21:40
+能完整的翻译这段对话嘛?
+
+## ChatGPT:
+当然，我很乐意帮你翻译这段对话。
+
+**Empty Space** 评论于 2019年10月5日 21:58
+> Hmm, I thought C++ 11 memory model solved this issue. –
+> 嗯，我以为 C++11 内存模型解决了这个问题。
+
+**doug** 评论于 2019年10月5日 22:19
+> Volatile is essential for things like reading from the same address mapped to IO multiple times in a row. IO devices may be set up to clock in sequential data chunks on each read and w/o volatile a program can assume that reading from the same address not otherwise modified by the program will not change value. It should not be used for multithreading which has related, but not identical semantics. –
+> `volatile` 对于诸如连续多次从映射到 IO 的同一地址读取这样的操作至关重要。IO 设备可能被设置为在每次读取时按顺序输入数据块，如果没有 `volatile`，程序可能会假设从同一地址读取（程序本身没有修改过）不会改变值。它不应该用于多线程，因为多线程有相关但并不完全相同的语义。
+
+**supercat** 评论于 2019年10月5日 22:27
+> @doug: Can C++11 atomics be fully supported in conforming fashion by freestanding implementations that don't know about any OS that might be used on the target? –
+> @doug：C++11 原子操作能否在符合规范的方式下，被那些不了解目标平台上可能使用的任何操作系统的独立实现完全支持？
+
+**supercat** 评论于 2019年10月5日 22:28
+> @doug: Are you saying that the authors of the Standard were wrong when they wrote the above quote? –
+> @doug：你是说标准制定者在写下上面这段引言时是错误的吗？
+
+**Peter** 评论于 2019年10月5日 23:05
+> You might want to attribute the source of "[according to the authors of the Standard, "A volatile object is also an appropriate model for a variable shared among multiple processes."]". There is no such statement in any of the C++ standards. Bear in mind that a significant amount of older Microsoft documentation (less so with current documentation) described Microsoft-specific features as being standard C++. –
+> 你可能需要注明 "[根据标准制定者，“`volatile` 对象也是在多个进程之间共享的变量的合适模型。”]" 这句话的出处。在任何 C++ 标准中都没有这样的声明。请记住，大量的旧 Microsoft 文档（现在的文档较少）将 Microsoft 特有的功能描述为标准 C++。
+
+**supercat** 评论于 2019年10月5日 23:10
+> @Peter: Citation added. –
+> @Peter：已添加引用。
+
+**doug** 评论于 2019年10月5日 23:11
+> @supercat. Atomics with mutexes, and volatile have different semantics. Microsoft's compilers have an option that enables/disables functionality that makes them useful for multithreading or narrows the semantics. Volatile remains useful for I/O and voids the assumption, useful in optimization, that multiple reads from the same address will return the same value for either option in the Microsoft compiler. –
+> @supercat。原子操作（使用互斥锁）和 `volatile` 具有不同的语义。Microsoft 的编译器有一个选项，可以启用/禁用使其对多线程有用的功能，或者缩小其语义范围。`volatile` 对于 I/O 仍然有用，并且否定了在优化中有用的假设，即在 Microsoft 编译器中，无论选择哪个选项，从同一地址多次读取都会返回相同的值。
+
+**supercat** 评论于 2019年10月5日 23:14
+> @doug: Microsoft's compilers predated the C and C++ Standards, and nothing in the published Rationale for the Standard indicates any intention that implementations for similar platforms shouldn't be expected to continue behaving as existing compilers for such platforms did in the days before the Standard. –
+> @doug：Microsoft 的编译器早于 C 和 C++ 标准，并且在已发布的标准理由中没有任何迹象表明，不应期望类似平台的实现继续像标准之前的那些平台的现有编译器那样运行。
+
+**doug** 评论于 2019年10月5日 23:25
+> @supercat, Yes, that isn't the C++11 or greater standard. it's an early C standard and one I wrote a lot of code for at the time. Modern C++ had to address issues due to cache layers and multiple CPUs that earlier C and C++ standards using only volatile were inadequate for without impairing efficiency. A good thing IMO. OTOH, I've never had code that had race condition problems using C++11 or higher and multicore hardware. Volatile alone just doesn't cut it in these environments. At least without impairing performance which the default Microsoft does. –
+> @supercat，是的，那不是 C++11 或更高版本的标准。那是一个早期的 C 标准，我当时为它编写了很多代码。现代 C++ 必须解决由于缓存层和多 CPU 导致的问题，而早期的 C 和 C++ 标准仅使用 `volatile` 在不损害效率的情况下是不够的。我认为这是一件好事。另一方面，我从来没有遇到过使用 C++11 或更高版本以及多核硬件的代码出现竞争条件问题。仅靠 `volatile` 在这些环境中是不够的。至少在不损害性能的情况下，而默认的 Microsoft 编译器会这样做。
+
+**supercat** 评论于 2019年10月5日 23:35
+> @doug: What is the advantage of weakening the meaning of an existing keyword and breaking existing code, versus adding a syntax that would waive some semantic guarantees? –
+> @doug：削弱现有关键字的含义并破坏现有代码，与添加一种可以放弃某些语义保证的语法相比，有什么优势呢？
+
+**supercat** 评论于 2019年10月5日 23:39
+> @doug: Also, would the C++ Standard allow freestanding implementations for all platforms to support atomics in an OS-agnostic fashion? From what I can tell, at least the C Standard would require that OS-agnostic freestanding implementations accept code that attempts atomic operations on all types, even though on many environments it would be impossible for an OS-agnostic implementation to do so usefully. –
+> @doug：另外，C++ 标准是否允许所有平台的独立实现以与操作系统无关的方式支持原子操作？据我所知，至少 C 标准会要求与操作系统无关的独立实现接受尝试对所有类型进行原子操作的代码，即使在许多环境中，与操作系统无关的实现不可能有效地做到这一点。
+
+**doug** 评论于 2019年10月5日 23:40
+> @supercat Existing code? C++ had no concept of multithreading. It did have a concept of how optimization could remove seemingly redundant reads/writes in a single thread of execution. That's what volatile addressed. Multithreading was done outside the C++ specification until C++11 by compiler extensions and OS specific functions. –
+> @supercat 现有代码？C++ 没有多线程的概念。它确实有一个关于优化如何删除单线程执行中看似冗余的读取/写入的概念。这就是 `volatile` 要解决的问题。在 C++11 之前，多线程是通过编译器扩展和操作系统特定功能在 C++ 规范之外完成的。
+
+**Empty Space** 评论于 2019年10月6日 6:36
+> Accepting for the first part of the answer. I am still not convinced about the last part because of the ongoing discussion and also that C standard was referenced and not C++. Although C++ inherits volatile from C, its meaning may have changed post C++ 11. –
+> 接受答案的第一部分。由于正在进行的讨论，以及引用的是 C 标准而不是 C++ 标准，我仍然对最后一部分不太信服。虽然 C++ 从 C 继承了 `volatile`，但其含义可能在 C++11 之后发生了变化。
+
+**supercat** 评论于 2019年10月6日 18:29
+> @doug: People have been writing C code which involved interactions between asynchronous execution contexts since before the first C Standard was published, and even before the volatile keyword was invented. The C language does not provide any mechanism by which such contexts may be created, but many execution environments do. Prior to the introduction of volatile, implementations intended to be suitable for use with such code couldn't do much optimization, but the volatile keyword was added as a simple means of making such code compatible with reasonable optimizations. –
+> @doug：自从第一个 C 标准发布之前，甚至在 `volatile` 关键字发明之前，人们就已经在编写涉及异步执行上下文之间交互的 C 代码。C 语言没有提供任何创建此类上下文的机制，但许多执行环境提供了。在引入 `volatile` 之前，旨在适用于此类代码的实现无法进行太多优化，但添加 `volatile` 关键字是一种使此类代码与合理的优化兼容的简单方法。
+
+**supercat** 评论于 2019年10月6日 18:33
+> @doug: In many cases, compilers didn't need volatile as an indication that they should behave cautiously around code that used I/O registers, since such code would often access pointers that were freshly cast from integers. Since programs would seldom form pointers from integers except in situations that involved doing something "weird", a compiler that made no effort to infer anything about the provenance of such pointers would naturally handle I/O registers just fine even without volatile. –
+> @doug：在许多情况下，编译器不需要 `volatile` 来指示它们应该在处理使用 I/O 寄存器的代码时谨慎行事，因为此类代码通常会访问从整数新近强制转换而来的指针。由于程序很少会从整数形成指针，除非在涉及做一些“奇怪”事情的情况下，因此即使没有 `volatile`，一个不努力推断此类指针来源的编译器也会自然而然地很好地处理 I/O 寄存器。
+
+**supercat** 评论于 2019年10月6日 18:44
+> @TrickorTreat: The authors of the C89 Standard didn't think it necessary to specify that implementations intended for various purposes should provide volatile semantics suitable for those purpose because it seemed obvious. Adding more detail to later standards would have required a consensus, which was blocked by compiler writers who failed to accept things the C89 Committee had thought obvious enough to go without saying. –
+> @TrickorTreat：C89 标准的制定者认为没有必要明确规定，旨在用于各种目的的实现应该提供适合这些目的的 `volatile` 语义，因为这似乎是显而易见的。在后来的标准中添加更多细节将需要达成共识，但这被那些未能接受 C89 委员会认为显而易见以至于无需赘言的事情的编译器编写者所阻止。
+
+**doug** 评论于 2019年10月6日 19:20
+> @supercat Right. Good history of the way C/C++ had workarounds based on use cases and not pure language specs. The newer language now includes a set of tools for creating efficient, multi-threaded code, and handling mem mapped IO w/o assumptions about what the compiler will do. More portable. OTOH, I've written a lot of code with pre-standard C/C++. The first step was always to understand the compiler and do any workarounds if needed. Not a big problem but one that is no longer needed in most cases. –
+> @supercat 对。很好地回顾了 C/C++ 基于用例而不是纯粹的语言规范进行变通的历史。较新的语言现在包含一套工具，用于创建高效的多线程代码，并在不假设编译器将做什么的情况下处理内存映射 IO。更具可移植性。另一方面，我用标准之前的 C/C++ 编写了很多代码。第一步总是了解编译器，并在需要时进行任何变通。这不是一个大问题，但在大多数情况下不再需要了。
+
+**supercat** 评论于 2019年10月6日 21:13
+> @doug: What I find annoying (and IMHO indefensible) is the way the maintainers of clang and gcc assume the purpose of the Standard was to deprecate pre-standard ways of accomplishing things for which support wasn't mandated, despite the fact that the authors of the Standard have expressly stated that they did not intend to demean programs that were useful but happened not to be portable. A compiler with a simple optimizer that was extremely cautious around places where there was evidence of "strangeness" would be much more useful than one with a fancier optimizer that has to be disabled. –
+> @doug：我感到恼火（并且恕我直言，站不住脚）的是 clang 和 gcc 的维护者假设标准的目的是要废弃那些没有强制支持的、在标准之前实现某些目标的方式，尽管标准的制定者明确表示他们无意贬低那些有用但不巧不便携的程序。一个具有简单优化器，在有“奇怪”迹象的地方极其谨慎的编译器，将比一个必须禁用的更花哨的优化器更有用。
+
+**doug** 评论于 2019年10月6日 21:40
+> @supercat True. There's a lot of old code that takes advantage of compiler smarts. Even though the language didn't specifically support multithreading C++ was still heavily used. People learned what their compilers did and found ways to accomplish goals. I guess it's up to the compiler maintainers to evolve things based on their user's needs. Microsoft's user base has a ton of these older code bases. Probably why their volatile has expanded semantics unless one opts for the more limited. GCC Clang, etc. could support this too, and make things easier for porting old bases. Oh well. –
+> @supercat 确实如此。有很多旧代码利用了编译器的智能。即使该语言没有明确支持多线程，C++ 仍然被大量使用。人们了解了他们的编译器所做的事情，并找到了实现目标的方法。我想这取决于编译器维护者根据用户的需求来发展事物。Microsoft 的用户群拥有大量的旧代码库。这可能就是为什么他们的 `volatile` 具有扩展的语义，除非选择更有限的语义。GCC、Clang 等也可以支持这一点，并使移植旧代码库更容易。唉，就这样吧。
+
+希望这个翻译对您有帮助！
+
+> provided by [EasyChat](https://site.eqing.tech/)
