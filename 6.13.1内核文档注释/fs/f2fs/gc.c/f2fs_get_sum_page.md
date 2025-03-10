@@ -95,7 +95,7 @@ struct page *f2fs_get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index)
 *   **关键点:**  它是 `__get_meta_page` 的一个简化接口，专门用于元数据 page 获取。
 
 **4. `__get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index, bool is_meta)`**
-
+**重要函数：**(f2fs_grab_cache_page)[]
 ```c
 static struct page *__get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index,
 							bool is_meta)
