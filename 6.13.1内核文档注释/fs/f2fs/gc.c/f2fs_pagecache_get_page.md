@@ -91,7 +91,7 @@ struct page *pagecache_get_page(struct address_space *mapping, pgoff_t index,
     *   **错误处理：** 它处理来自 `__filemap_get_folio` 的错误返回，并在发生错误时返回 `NULL`。
 
 **3. `__filemap_get_folio(struct address_space *mapping, pgoff_t index, fgf_t fgp_flags, gfp_t gfp)`**
-[__filema_get_folio.md](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_get_folio.md])
+* [`__filema_get_folio.md`](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_get_folio.md])
 
 **总结：**
 
