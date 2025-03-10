@@ -185,14 +185,93 @@ EXPORT_SYMBOL(__filemap_get_folio);
 	```
     *   `no_page:`: 当在缓存中未找到 folio 时到达的标签 (`!folio`)。
     *   **`FGP_CREAT` 标志：** 如果在 `fgp_flags` 中设置了 `FGP_CREAT`，则表示调用者希望在缓存中未找到 folio 时创建一个新的 folio。
-        *   **Folio 创建逻辑（在 `FGP_CREAT` 块内）：** 此部分处理新 folio 的分配和添加到页缓存。它包括：
-            *   确定 folio 阶数 (`order`)。
-            *   内存分配 (`filemap_alloc_folio`)。
-            *   如果请求，则设置 `FGP_ACCESSED`。
-            *   将新 folio 添加到地址空间 (`filemap_add_folio`)。
-            *   处理 `-EEXIST`（folio 已存在 - 从 `repeat` 重试）。
-            *   处理分配或添加期间的其他错误。
-            *   如果设置了 `FGP_FOR_MMAP`，则解锁 folio（mmap 期望未锁定的页面）。
+        *   **Folio 阶数 (Order) 计算:**
+    ```c
+    unsigned int min_order = mapping_min_folio_order(mapping);
+    unsigned int order = max(min_order, FGF_GET_ORDER(fgp_flags));
+    int err;
+    index = mapping_align_index(mapping, index);
+
+    if (order > mapping_max_folio_order(mapping))
+        order = mapping_max_folio_order(mapping);
+    /* If we're not aligned, allocate a smaller folio */
+    if (index & ((1UL << order) - 1))
+        order = __ffs(index);
+    ```
+    *   **`unsigned int min_order = mapping_min_folio_order(mapping);`:**  获取与 `mapping` 关联的最小 folio 阶数。不同的 `address_space` 可能有不同的最小阶数要求。
+    *   **`unsigned int order = max(min_order, FGF_GET_ORDER(fgp_flags));`:**  计算初始的 folio 阶数。
+        *   `FGF_GET_ORDER(fgp_flags)`:  尝试从 `fgp_flags` 中获取请求的 folio 阶数。`FGF_GET_ORDER` 可能是个宏，用于从标志中提取阶数信息。如果 `fgp_flags` 中没有指定阶数，则 `FGF_GET_ORDER` 可能会返回 0。
+        *   `max(min_order, FGF_GET_ORDER(fgp_flags))`:  取 `min_order` 和从 `fgp_flags` 获取的阶数中的较大值。**这意味着，即使 `fgp_flags` 没有指定阶数，也会至少分配 `min_order` 阶的 folio。**
+    *   **`index = mapping_align_index(mapping, index);`:**  将 `index` 对齐到 folio 大小的边界。对于多页 folio，索引通常需要对齐到 folio 的起始位置。
+    *   **`if (order > mapping_max_folio_order(mapping)) order = mapping_max_folio_order(mapping);`:**  限制 folio 阶数不超过与 `mapping` 关联的最大允许阶数。
+    *   **不对齐索引的特殊处理:**
+        ```c
+        /* If we're not aligned, allocate a smaller folio */
+        if (index & ((1UL << order) - 1))
+            order = __ffs(index);
+        ```
+        *   `index & ((1UL << order) - 1)`:  检查 `index` 是否在当前 `order` 下是对齐的。如果 `index` 的低 `order` 位不为 0，则表示不对齐。
+        *   `order = __ffs(index);`:  如果索引不对齐，则 **强制将 `order` 降低到足以包含 `index` 的最小阶数**。`__ffs(index)` 函数返回 `index` 二进制表示中第一个 set bit 的位置，这可以用来计算最小的阶数。**这个逻辑是为了处理一些特殊情况，可能需要分配一个比通常小的 folio。**
+
+*   **Folio 分配循环 (`do-while` 循环):**
+    ```c
+    do {
+        gfp_t alloc_gfp = gfp;
+
+        err = -ENOMEM;
+        if (order > min_order)
+            alloc_gfp |= __GFP_NORETRY | __GFP_NOWARN;
+        folio = filemap_alloc_folio(alloc_gfp, order);
+        if (!folio)
+            continue;
+
+        /* Init accessed so avoid atomic mark_page_accessed later */
+        if (fgp_flags & FGP_ACCESSED)
+            __folio_set_referenced(folio);
+
+        err = filemap_add_folio(mapping, folio, index, gfp);
+        if (!err)
+            break;
+        folio_put(folio);
+        folio = NULL;
+    } while (order-- > min_order);
+    ```
+    *   **`do-while (order-- > min_order)` 循环:**  这是一个 **阶数递减的分配重试循环**。它从计算出的 `order` 开始，尝试分配 folio，如果分配失败，则 **逐步降低 `order` (每次减 1)**，并再次尝试分配，直到 `order` 降低到 `min_order` 为止。
+    *   **`gfp_t alloc_gfp = gfp;`:**  复制传入的 `gfp` 标志到 `alloc_gfp`。
+    *   **`if (order > min_order) alloc_gfp |= __GFP_NORETRY | __GFP_NOWARN;`:**  如果当前尝试的 `order` 大于最小阶数 `min_order`，则在 `alloc_gfp` 中 **添加 `__GFP_NORETRY` 和 `__GFP_NOWARN` 标志**。
+        *   `__GFP_NORETRY`:  内存分配失败时 **不重试**。
+        *   `__GFP_NOWARN`:  内存分配失败时 **不打印警告信息**。
+        *   **逻辑:**  对于较大阶数的 folio 分配，如果第一次尝试失败，则不再重试，也不打印警告，直接尝试分配更小阶数的 folio。这可能是为了避免在内存压力较大时，长时间阻塞在较大 folio 的分配上。
+    *   **`folio = filemap_alloc_folio(alloc_gfp, order);`:**  调用 `filemap_alloc_folio` 函数 **分配指定 `order` 的 folio**。
+    *   **`if (!folio) continue;`:**  如果 `filemap_alloc_folio` 返回 `NULL` (分配失败)，则 `continue` 到循环的下一次迭代，尝试分配更小阶数的 folio。
+    *   **`if (fgp_flags & FGP_ACCESSED) __folio_set_referenced(folio);`:**  如果 `fgp_flags` 中设置了 `FGP_ACCESSED` 标志，则调用 `__folio_set_referenced(folio)` 将新分配的 folio 标记为已引用。
+    *   **`err = filemap_add_folio(mapping, folio, index, gfp);`:**  调用 `filemap_add_folio` 函数将新分配的 `folio` **添加到与 `mapping` 关联的页面缓存 XArray 中**，索引为 `index`。
+    *   **`if (!err) break;`:**  如果 `filemap_add_folio` 返回 0 (添加成功)，则 `break` 跳出循环，表示 folio 分配和添加成功。
+    *   **`folio_put(folio); folio = NULL;`:**  如果 `filemap_add_folio` 返回错误 (添加失败)，则 **释放已分配的 `folio`**，并将 `folio` 设置为 `NULL`，以便在下一次循环迭代中重新分配。
+    *   **`-EEXIST` 处理:**
+        ```c
+        if (err == -EEXIST)
+            goto repeat;
+        ```
+        *   如果 `filemap_add_folio` 返回 `-EEXIST` 错误，表示 **在添加 folio 的过程中，发现页面缓存中已经存在相同索引的 folio**。这可能是并发操作导致的。在这种情况下，`goto repeat` 跳转回 `repeat` 标签， **重新开始整个页面获取流程**，包括重新查找页面缓存。
+    *   **其他错误处理:**
+        ```c
+        if (err)
+            return ERR_PTR(err);
+        ```
+        *   如果 `filemap_add_folio` 返回其他错误 (非 `-EEXIST`)，则表示 folio 分配或添加过程中发生了不可恢复的错误，函数返回错误指针 `ERR_PTR(err)`。
+
+*   **`FGP_FOR_MMAP` 特殊处理:**
+    ```c
+    /*
+     * filemap_add_folio locks the page, and for mmap
+     * we expect an unlocked page.
+     */
+    if (folio && (fgp_flags & FGP_FOR_MMAP))
+        folio_unlock(folio);
+    ```
+    *   如果 `fgp_flags` 中设置了 `FGP_FOR_MMAP` 标志 (表示用于内存映射 mmap)，则在成功分配和添加 folio 后，需要 **手动解锁 folio**。这是因为 mmap 场景下，通常期望获取到的是未锁定的页面。
+
 
     *   **没有 Folio 且没有 `FGP_CREAT`：** 如果在 `no_page` 标签之后 `folio` 仍然为 `NULL` 并且未设置 `FGP_CREAT`，则表示未找到 folio 并且未请求创建。在这种情况下，它使用 `ERR_PTR(-ENOENT)` 返回 `-ENOENT` 错误。
 
