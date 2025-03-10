@@ -95,7 +95,7 @@ struct page *f2fs_get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index)
 *   **关键点:**  它是 `__get_meta_page` 的一个简化接口，专门用于元数据 page 获取。
 
 **4. `__get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index, bool is_meta)`**
-**重要函数：**(f2fs_grab_cache_page)[]
+**重要相关链接:** [内核中PagetoUpdate的作用是什么](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/page-flags.c/PageUptodate)
 ```c
 static struct page *__get_meta_page(struct f2fs_sb_info *sbi, pgoff_t index,
 							bool is_meta)
@@ -188,7 +188,7 @@ out:
     *   如果 `is_meta` 为 `false` (非元数据 page)，则清除 `fio.op_flags` 中的 `REQ_META` 标志。这可能是为了区分元数据 IO 和非元数据 IO 的处理方式。
 *   **`repeat` 标签和 Page Cache 获取循环:**
     ```c
-repeat:
+	repeat:
     page = f2fs_grab_cache_page(mapping, index, false);
     if (!page) {
         cond_resched();
