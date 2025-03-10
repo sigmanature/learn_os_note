@@ -1,5 +1,5 @@
 ## `__filemap_get_folio(struct address_space *mapping, pgoff_t index, fgf_t fgp_flags, gfp_t gfp)`
-
+* **重要函数:** [filemap_get_entry]()
 ```c
 struct folio *__filemap_get_folio(struct address_space *mapping, pgoff_t index,
 		fgf_t fgp_flags, gfp_t gfp)
