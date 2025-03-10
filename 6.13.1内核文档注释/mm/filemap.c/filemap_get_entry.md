@@ -1,4 +1,4 @@
-* ** 相关函数:[`__filemap_get_folio`](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_get_folio.md) **
+* **相关函数:**[`__filemap_get_folio`](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_get_folio.md) 
 
 好的，让我们逐个解答你的问题，首先解释为什么在 `__filemap_get_folio` 中当 `xa_is_value(folio)` 为真时 `folio` 会被设置为 `NULL`，然后我们将深入探讨 `filemap_get_entry` 函数。
 
