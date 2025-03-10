@@ -1,5 +1,5 @@
 ## `__filemap_get_folio(struct address_space *mapping, pgoff_t index, fgf_t fgp_flags, gfp_t gfp)`
-* **重要函数:** [filemap_get_entry]()
+* **重要函数:** [`filemap_get_entry`](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_get_entry.md)
 ```c
 struct folio *__filemap_get_folio(struct address_space *mapping, pgoff_t index,
 		fgf_t fgp_flags, gfp_t gfp)
