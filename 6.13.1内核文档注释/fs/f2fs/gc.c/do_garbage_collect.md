@@ -186,6 +186,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
         unlock_page(sum_page);
     }
     ```
+    * 	**相关重要函数:**(__filemap_get_folio)[https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_get_folio.md]
     *   循环遍历 `start_segno` 到 `end_segno` 之间的 segment。
     *   `f2fs_get_sum_page(sbi, segno++)`:  获取 segment `segno` 的 summary page。如果 summary page 不在内存中，则从磁盘读取。`segno++` 在每次循环后递增。
     *   `IS_ERR(sum_page)`:  检查 `f2fs_get_sum_page` 是否返回错误。
