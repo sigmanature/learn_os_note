@@ -160,7 +160,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
 ```
 
 4.  **Segment 类型检查和 Summary Block 预读:**
-    ```c
+    ```C
     sanity_check_seg_type(sbi, get_seg_entry(sbi, segno)->type);
     ```
     *   `sanity_check_seg_type`:  对 segment 类型进行健全性检查，确保类型有效。
