@@ -197,7 +197,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
         *   返回错误码。
     *   `unlock_page(sum_page)`:  解锁 summary page。`f2fs_get_sum_page` 获取的 page 是锁定的，这里需要解锁，因为后续可能在 `gc_node_segment` 或 `gc_data_segment` 中再次锁定。
 
-        ```C
+      ```C
 	blk_start_plug(&plug);
 
 	for (segno = start_segno; segno < end_segno; segno++) {
@@ -243,7 +243,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
 		sbi->gc_reclaimed_segs[sbi->gc_mode]++;
 		migrated++;
 
-		freed:
+	freed:
 		if (gc_type == FG_GC &&
 				get_valid_blocks(sbi, segno, false) == 0)
 			seg_freed++;
@@ -252,7 +252,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
 			sbi->next_victim_seg[gc_type] =
 				(segno + 1 < sec_end_segno) ?
 					segno + 1 : NULL_SEGNO;
-		skip:
+	skip:
 		f2fs_put_page(sum_page, 0);
 	}
 	```
