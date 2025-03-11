@@ -175,7 +175,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
     *   `GET_SUM_BLOCK(sbi, segno)`:  获取 segment `segno` 的 summary block 的块号。
     *   `end_segno - segno`:  预读的 segment 数量。
     *   `META_SSA`:  预读的元数据类型，`SSA` (Segment Summary Area)。
-    *   `true`:  表示是预读操作。
+    *   `true`:  表示是预读操作。<u>a</u>
     *   对于 large section，预读多个连续 segment 的 summary block 可以提高性能。
 
 6.  **引用 Summary Page:**
