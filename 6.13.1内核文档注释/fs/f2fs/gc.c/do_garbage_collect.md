@@ -9,6 +9,22 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
 {
 	struct page *sum_page;
 	struct f2fs_summary_block *sum;
+	/*Block-sized summary block structure 
+struct f2fs_summary_block {
+	struct f2fs_summary entries[ENTRIES_IN_SUM];
+	struct f2fs_journal journal;
+	struct summary_footer footer;
+} __packed;*/
+	/*struct f2fs_summary {
+	__le32 nid;		parent node id 
+	union {
+		__u8 reserved[3];
+		struct {
+			__u8 version;		 node version number 
+			__le16 ofs_in_node;	/block index in parent node 
+		} __packed;
+	};
+} __packed;*/
 	struct blk_plug plug;
 	unsigned int segno = start_segno;
 	unsigned int end_segno = start_segno + SEGS_PER_SEC(sbi);
