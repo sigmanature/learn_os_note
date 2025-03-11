@@ -1,8 +1,8 @@
- 好的，我们来深入解析 `do_garbage_collect` 函数，并重点关注 F2FS 如何处理 segment 数据并提交 IO 请求。
-
+好的，我们来深入解析 `do_garbage_collect` 函数，并重点关注 F2FS 如何处理 segment 数据并提交 IO 请求。
+**重要函数:**[]()
 **`do_garbage_collect` 函数代码逐行解析**
 
-```c
+```c 
 static int do_garbage_collect(struct f2fs_sb_info *sbi,
 				unsigned int start_segno,
 				struct gc_inode_list *gc_list, int gc_type,
