@@ -97,7 +97,8 @@ next_step:
     *   `int submitted = 0;`:  记录提交的 IO 请求数量。
     *   `unsigned int usable_blks_in_seg = f2fs_usable_blks_in_seg(sbi, segno);`: 获取当前 segment 中可用的块数量，考虑了 zoned device 的情况。
 
-*   **计算起始块地址 `start_addr = START_BLOCK(sbi, segno);`**:  通过 `START_BLOCK` 宏计算当前 segment 的起始块地址。我们稍后会详细分析 `START_BLOCK` 宏。
+*   **计算起始块地址 `start_addr = START_BLOCK(sbi, segno);`**:  通过 `START_BLOCK` 宏计算当前 segment 的起始块地址。我们稍后会详细分析 `START_BLOCK` 宏。因为涉及到了使用将逻辑segment号转化为物理的segment号这一行为,这意味着我们在do_garbage_collect函数中计算和使用的都是逻辑的segment
+号码。
 
 *   **三阶段循环 (`next_step` 标签和 `phase` 变量):**  `gc_node_segment` 函数使用 `phase` 变量和 `goto next_step` 实现了三阶段的处理流程。
     *   **`next_step:` 标签:**  循环的入口点。
