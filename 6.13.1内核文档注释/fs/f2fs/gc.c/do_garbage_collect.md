@@ -1,5 +1,4 @@
-<u>a
-好的，我们来深入解析 `do_garbage_collect` 函数，并重点关注 F2FS 如何处理 segment 数据并提交 IO 请求。<br>
+好的,我们来深入解析 `do_garbage_collect` 函数，并重点关注 F2FS 如何处理 segment 数据并提交 IO 请求。<br>
 **重要函数:**[gc_node_segment](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/gc.c/gc_node_segment.md)<br>
 **`do_garbage_collect` 函数代码逐行解析**
 
