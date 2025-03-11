@@ -299,7 +299,7 @@ static int do_garbage_collect(struct f2fs_sb_info *sbi,
 
 10. **Summary 类型一致性检查:**
     ```c
-    sum = page_address(sum_page);
+    sum = page_address(sum_page);//f2fs_summary_block *sum
     if (type != GET_SUM_TYPE((&sum->footer))) {
         f2fs_err(sbi, "Inconsistent segment (%u) type [%d, %d] in SSA and SIT",
              segno, type, GET_SUM_TYPE((&sum->footer)));
