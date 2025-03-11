@@ -277,7 +277,11 @@ static inline struct free_segmap_info *FREE_I(struct f2fs_sb_info *sbi)
     *   `SEGS_TO_BLKS(sbi, ...)`:  将 R2L 映射后的 segment 号转换为块数量，得到从 segment 0 起始地址到目标 segment 起始地址的块偏移量。
     *   `SEG0_BLKADDR(sbi) + ...`:  将 segment 0 的起始块地址加上块偏移量，得到目标 segment (`segno`) 的起始块地址。
 
-*   **总结 `START_BLOCK(sbi, segno)` 宏:**  `START_BLOCK` 宏 **根据 R2L 映射和 segment 大小，计算给定 segment 号的起始块地址**。  它考虑了 R2L 映射带来的逻辑地址和物理地址的转换，以及每个 segment 包含的块数量。  **这个宏是 F2FS 地址转换的关键部分，用于将逻辑 segment 号转换为实际的块地址。**
-
-**(由于篇幅限制，`f2fs_ra_meta_pages`, `f2fs_ra_node_page`, `read_node_page`, 和 `f2fs_move_node_page` 函数的分析将在后续回复中继续。)**
-
+**4. `f2fs_ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages, int type, bool sync)`**
+[f2fs_ra_meta_pages]()
+**5. `f2fs_ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)`**
+[f2fs_ra_node_page]()
+**6. `read_node_page(struct page *page, blk_opf_t op_flags)`**
+[read_node_page]()
+**7. `f2fs_move_node_page(struct page *node_page, int gc_type)`**
+[f2fs_move_node_page]()
