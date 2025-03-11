@@ -162,11 +162,3 @@ out:
     *   `return blkno - start;`:  返回实际预读的页面数量。
 
 *   **总结 `f2fs_ra_meta_pages`:**  `f2fs_ra_meta_pages` 函数实现了 **批量预读不同类型元数据页面的功能**。  它使用 `blk_plug` 机制合并 IO 请求，通过 `f2fs_grab_cache_page` 获取页面缓存页，并使用 `f2fs_submit_page_bio` **提交实际的页面读取 BIO 请求**。  函数内部还进行了块地址有效性检查、页面缓存命中检查和 IO 统计更新，保证了预读操作的正确性和效率。
-
-**5. `f2fs_ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)`**
-**6. `read_node_page(struct page *page, blk_opf_t op_flags)`**
-**7. `f2fs_move_node_page(struct page *node_page, int gc_type)`**
-**总结 `gc_node_segment` 调用链分析:**
-
-通过对 `gc_node_segment` 函数及其调用链的详细分析，我们可以看到 F2FS 节点段垃圾回收的复杂性和精细度。  **`gc_node_segment` 函数本身负责高层次的流程控制和策略选择 (例如，三阶段处理，区分 FG_GC 和 BG_GC)，而具体的 IO 操作和页面缓存交互则委托给其调用的子函数 (例如, `f2fs_ra_meta_pages`, `f2fs_ra_node_page`, `read_node_page`, `f2fs_move_node_page`)。**  这些子函数共同协作，完成了节点段垃圾回收的数据迁移任务。  **`f2fs_submit_page_bio` 函数在这些子函数中被多次调用，是实际提交 IO 请求的关键接口。**  F2FS 通过精心的设计和优化，在保证数据一致性和可靠性的前提下，尽可能提高垃圾回收的效率和性能。
-
