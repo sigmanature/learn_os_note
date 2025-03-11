@@ -278,10 +278,10 @@ static inline struct free_segmap_info *FREE_I(struct f2fs_sb_info *sbi)
     *   `SEG0_BLKADDR(sbi) + ...`:  将 segment 0 的起始块地址加上块偏移量，得到目标 segment (`segno`) 的起始块地址。
 
 **4. `f2fs_ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages, int type, bool sync)`**
-[f2fs_ra_meta_pages]()
+[f2fs_ra_meta_pages](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/checkpoint.c/f2fs_ra_meta_pages.md)
 **5. `f2fs_ra_node_page(struct f2fs_sb_info *sbi, nid_t nid)`**
-[f2fs_ra_node_page]()
+[f2fs_ra_node_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/f2fs_ra_node_page.md)
 **6. `read_node_page(struct page *page, blk_opf_t op_flags)`**
-[read_node_page]()
+[read_node_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/read_node_page.md)
 **7. `f2fs_move_node_page(struct page *node_page, int gc_type)`**
-[f2fs_move_node_page]()
+[f2fs_move_node_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/f2fs_move_node_page.md)
