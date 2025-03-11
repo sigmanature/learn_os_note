@@ -278,7 +278,7 @@ static inline struct free_segmap_info *FREE_I(struct f2fs_sb_info *sbi)
     *   `SEG0_BLKADDR(sbi) + ...`:  将 segment 0 的起始块地址加上块偏移量，得到目标 segment (`segno`) 的起始块地址。
 
 **4. `f2fs_ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages, int type, bool sync)`**
-*调用处:*
+* 调用处
 ```C
 if (phase == 0) {
 			f2fs_ra_meta_pages(sbi, NAT_BLOCK_OFFSET(nid), 1,
