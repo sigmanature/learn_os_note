@@ -165,7 +165,7 @@ next_step:
             ```
             *   **获取节点页面:**  `node_page = f2fs_get_node_page(sbi, nid);`:  调用 `f2fs_get_node_page` 函数获取节点页面。
             *   **错误处理:**  `if (IS_ERR(node_page)) continue;`:  如果 `f2fs_get_node_page` 返回错误，则跳过当前块，处理下一个块。
-            *   **再次检查块有效性:**  `if (check_valid_map(sbi, segno, off) == 0) { ... }`:  在 `f2fs_get_node_page` 调用之后，再次检查块的有效性。因为在 `f2fs_get_node_page` 执行期间，块可能变得无效 (例如，被其他操作回收)。如果块无效，则释放 `node_page` 并跳过。
+            *   **再次检查块有效性:**  `if (check_valid_map(sbi, segno, off) == 0) { ... }`:  在 `f2fs_get_node_page` 调用之后，再次检查块的有效性。因为在 `f2fs_get_node_page` 执行期间，块可能变得无效 (例如，被其他操作回收)。如果块无效，则释放 `node_page` 并跳过。**注意!第三阶段进行的是有效数据的搬移!!gc实际上是将有效数据合并在一起使得无效数据,或者可被覆写的数据空间变得更大更连续。而不是直接"回收"无效数据**
             *   **获取节点信息:**  `if (f2fs_get_node_info(sbi, nid, &ni, false)) { ... }`:  调用 `f2fs_get_node_info` 函数获取节点信息 (`struct node_info`)。如果获取失败，则释放 `node_page` 并跳过。
             *   **地址一致性检查:**  `if (ni.blk_addr != start_addr + off) { ... }`:  检查从 `f2fs_get_node_info` 获取的节点块地址 `ni.blk_addr` 是否与当前 segment 的预期块地址 `start_addr + off` 一致。如果不一致，则释放 `node_page` 并跳过。 **这个检查是为了确保 Summary Block 中记录的节点地址与实际的节点信息一致性。**
             *   **迁移节点页面:**  `err = f2fs_move_node_page(node_page, gc_type);`:  调用 `f2fs_move_node_page` 函数 **迁移节点页面**。这是实际执行数据迁移的关键步骤。
