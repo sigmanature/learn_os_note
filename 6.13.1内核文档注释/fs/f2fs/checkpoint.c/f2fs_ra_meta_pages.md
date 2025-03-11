@@ -57,7 +57,7 @@ int f2fs_ra_meta_pages(struct f2fs_sb_info *sbi, block_t start, int nrpages,
 		}
 
 		page = f2fs_grab_cache_page(META_MAPPING(sbi),
-						fio.new_blkaddr, false);
+						fio.new_blkaddr, false);//fio.new_blkadd 也就是block索引直接作为页缓存的index
 		if (!page)
 			continue;
 		if (PageUptodate(page)) {
