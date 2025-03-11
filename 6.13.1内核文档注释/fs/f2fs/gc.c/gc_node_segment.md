@@ -11,7 +11,6 @@ static int gc_node_segment(struct f2fs_sb_info *sbi,
 	bool fggc = (gc_type == FG_GC);
 	int submitted = 0;
 	unsigned int usable_blks_in_seg = f2fs_usable_blks_in_seg(sbi, segno);
-
 	start_addr = START_BLOCK(sbi, segno);
 
 next_step:
