@@ -1,3 +1,4 @@
+**核心函数**[__filemap_get_folio](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_get_folio.md)
  当然，让我们详细分解 `f2fs_pagecache_get_page`、`pagecache_get_page` 和 `__filemap_get_folio` 函数。这些函数对于 F2FS 如何与 Linux 页缓存交互至关重要，尤其是在 `__get_meta_page` 中看到的元数据管理上下文中。
 
 **1. `f2fs_pagecache_get_page(struct address_space *mapping, pgoff_t index, fgf_t fgp_flags, gfp_t gfp_mask)`**
