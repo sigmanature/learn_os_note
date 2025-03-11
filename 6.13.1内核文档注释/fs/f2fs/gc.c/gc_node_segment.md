@@ -1,4 +1,4 @@
-**相关函数:**[do_garbage_collect](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/gc.c/do_garbage_collect.md)
+**相关函数:**[do_garbage_collect](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/gc.c/do_garbage_collect.md)<br>
 **1. `gc_node_segment(struct f2fs_sb_info *sbi, struct f2fs_summary *sum, unsigned int segno, int gc_type)`**
 
 ```c
