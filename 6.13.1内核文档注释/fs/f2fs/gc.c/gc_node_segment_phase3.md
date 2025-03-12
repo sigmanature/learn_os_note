@@ -222,7 +222,7 @@ cache:
     ne = nat_blk->entries[nid - start_nid];
     node_info_from_raw_nat(ni, &ne);
     f2fs_put_page(page, 1);
-cache:
+	cache:
     // ... (后续缓存和验证操作) ...
     ```
     *   **计算 NAT 页面索引:**  `index = current_nat_addr(sbi, nid);`:  调用 `current_nat_addr` 函数 **计算 NID 对应的 NAT 页面索引 (物理块地址)**。
