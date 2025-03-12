@@ -5,7 +5,6 @@
 我们逐个分析 Phase 2 中用到的关键函数，理解其实现细节。
 
 *   **`check_valid_map(struct f2fs_sb_info *sbi, unsigned int segno, int offset)`**
- * int a;
 
 ```c
 static int check_valid_map(struct f2fs_sb_info *sbi,
@@ -363,8 +362,7 @@ release_page:
     **`__write_node_page` 函数很可能是 F2FS 中实际提交节点页面 *写* IO 请求的底层函数。**  它可能封装了 BIO 结构体的创建、填充、提交等操作，并处理了同步/异步写回、错误处理、统计信息更新等细节。  **在 `f2fs_move_node_page` 函数中调用 `__write_node_page`，就实现了将节点页面 *迁移到新位置* 的写 IO 操作。**
 
 *   **`__get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid, struct page *parent, int start)`**
-	*   
-   (__get_node_page)[https://github.com/sigmanature/learn_os_note/edit/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/__get_node_page.md]
+	* [_get_node_page](https://github.com/sigmanature/learn_os_note/edit/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/__get_node_page.md)
 
 *   **`f2fs_get_node_page(struct f2fs_sb_info *sbi, pgoff_t nid)`**
 
