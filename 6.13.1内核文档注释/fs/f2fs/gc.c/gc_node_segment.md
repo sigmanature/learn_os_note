@@ -172,6 +172,7 @@ next_step:
                 submitted++;
             stat_inc_node_blk_count(sbi, 1, gc_type);
             ```
+            *	**第三阶段详细分析:**[gc_node_segment_phase3.md(https://github.com/sigmanature/learn_os_note/edit/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/gc.c/gc_node_segment_phase3.md)
             *   **获取节点页面:**  `node_page = f2fs_get_node_page(sbi, nid);`:  调用 `f2fs_get_node_page` 函数获取节点页面。
             *   **错误处理:**  `if (IS_ERR(node_page)) continue;`:  如果 `f2fs_get_node_page` 返回错误，则跳过当前块，处理下一个块。
             *   **再次检查块有效性:**  `if (check_valid_map(sbi, segno, off) == 0) { ... }`:  在 `f2fs_get_node_page` 调用之后，再次检查块的有效性。因为在 `f2fs_get_node_page` 执行期间，块可能变得无效 (例如，被其他操作回收)。如果块无效，则释放 `node_page` 并跳过。**注意!第三阶段进行的是有效数据的搬移!!gc实际上是将有效数据合并在一起使得无效数据,或者可被覆写的数据空间变得更大更连续。而不是直接"回收"无效数据**
