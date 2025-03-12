@@ -440,7 +440,7 @@ out_put_err:
 
 *   **`repeat:` 标签和页面获取循环:**
     ```c
-repeat:
+	repeat:
 	page = f2fs_grab_cache_page(NODE_MAPPING(sbi), nid, false);
 	if (!page)
 		return ERR_PTR(-ENOMEM);
@@ -496,7 +496,7 @@ repeat:
 
     *   **`page_hit:` 标签和 NID 一致性检查:**
         ```c
-page_hit:
+	page_hit:
         if (likely(nid == nid_of_node(page)))
             return page;
 
