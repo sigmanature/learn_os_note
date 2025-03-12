@@ -406,7 +406,7 @@ repeat:
 		err = -EFSBADCRC;
 		goto out_err;
 	}
-page_hit:
+	page_hit:
 	if (likely(nid == nid_of_node(page)))
 		return page;
 
