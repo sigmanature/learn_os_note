@@ -5,6 +5,7 @@
 我们逐个分析 Phase 2 中用到的关键函数，理解其实现细节。
 
 *   **`check_valid_map(struct f2fs_sb_info *sbi, unsigned int segno, int offset)`**
+ * int a;
 
 ```c
 static int check_valid_map(struct f2fs_sb_info *sbi,
