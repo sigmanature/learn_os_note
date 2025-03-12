@@ -160,7 +160,7 @@ cache:
 
 *   **`retry:` 标签和 NAT 缓存查找:**
     ```c
-retry:
+	retry:
 	/* Check nat cache */
 	f2fs_down_read(&nm_i->nat_tree_lock);
 	e = __lookup_nat_cache(nm_i, nid);
@@ -235,7 +235,7 @@ cache:
 
 *   **`cache:` 标签和后续操作:**
     ```c
-cache:
+	cache:
 	blkaddr = le32_to_cpu(ne.block_addr);
 	if (__is_valid_data_blkaddr(blkaddr) &&
 		!f2fs_is_valid_blkaddr(sbi, blkaddr, DATA_GENERIC_ENHANCE))
