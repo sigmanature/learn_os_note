@@ -496,7 +496,7 @@ out_put_err:
 
     *   **`page_hit:` 标签和 NID 一致性检查:**
 	```c
-page_hit:
+	page_hit:
         if (likely(nid == nid_of_node(page)))
             return page;
 
@@ -507,16 +507,16 @@ page_hit:
         set_sbi_flag(sbi, SBI_NEED_FSCK);
         f2fs_handle_error(sbi, ERROR_INCONSISTENT_FOOTER);
         err = -EFSCORRUPTED;
- out_err:
+ 	out_err:
         ClearPageUptodate(page);
- out_put_err:
+ 	out_put_err:
         /* ENOENT comes from read_node_page which is not an error. */
         if (err != -ENOENT)
             f2fs_handle_page_eio(sbi, page_folio(page), NODE);
         f2fs_put_page(page, 1);
         return ERR_PTR(err);
 	```
-        *   **`page_hit:` 标签:**  `read_node_page` 返回 `LOCKED_PAGE` 或页面读取成功后，跳转到 `page_hit` 标签。
+  	*   **`page_hit:` 标签:**  `read_node_page` 返回 `LOCKED_PAGE` 或页面读取成功后，跳转到 `page_hit` 标签。
         *   **NID 一致性检查:**  `if (likely(nid == nid_of_node(page))) return page;`:  **检查页面的实际 NID (`nid_of_node(page)`) 是否与请求的 NID (`nid`) 一致**。  `nid_of_node(page)` 从页面 Footer 中提取 NID 信息。  **这是一个重要的 *双重验证* 机制，确保获取到的页面确实是请求的 NID 对应的页面，防止 Page Cache 出现错误或数据损坏。**  在正常情况下，NID 应该是一致的。
         *   **不一致错误处理:**  如果 NID 不一致，则打印警告信息，设置文件系统错误标志，并返回 `-EFSCORRUPTED` 错误。
         *   **`out_err:` 标签:**  页面 uptodate 状态检查或校验和验证失败后，跳转到 `out_err` 标签。  `ClearPageUptodate(page);` 清除页面的 uptodate 标志，表示页面数据无效。
