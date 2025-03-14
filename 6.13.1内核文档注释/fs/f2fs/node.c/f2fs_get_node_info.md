@@ -1,4 +1,14 @@
 ```c
+/*
+ * For node information
+ */
+struct node_info {
+	nid_t nid;		/* node id */
+	nid_t ino;		/* inode number of the node's owner */
+	block_t	blk_addr;	/* block address of the node */
+	unsigned char version;	/* version of the node */
+	unsigned char flag;	/* for node information bits */
+};
 int f2fs_get_node_info(struct f2fs_sb_info *sbi, nid_t nid,
 				struct node_info *ni, bool checkpoint_context)
 {
