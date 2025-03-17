@@ -1,5 +1,5 @@
    好的，我们来深入剖析 `gc_data_segment` 函数及其调用链，理解 F2FS 如何进行数据段的垃圾回收，并详细分析你提供的所有代码片段。
-**NAT相关宏：**[NAT_START_BLOCK_OFFSET](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.h/current_nat_addr.md)
+**NAT相关宏：**[NAT_START_BLOCK_OFFSET](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.h/current_nat_addr.md)<br>
 **1. `gc_data_segment(struct f2fs_sb_info *sbi, struct f2fs_summary *sum, struct gc_inode_list *gc_list, unsigned int segno, int gc_type, bool force_migrate)`**
 
 ```c
