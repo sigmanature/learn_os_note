@@ -180,8 +180,8 @@ next_step:
 }
 ```
 
-*   **功能:** `gc_data_segment` 函数负责处理 **数据段** 的垃圾回收。  它遍历给定 segment (`segno`) 的 Summary Block (`sum`) 中的条目，检查每个数据块，并将有效的数据块迁移到新的位置，并更新父节点信息。
-
+*   **功能:** `gc_data_segment` 函数负责处理 **数据段** 的垃圾回收。  它遍历给定 segment (`segno`) 的 Summary Block (`sum`) 中的条目，检查每个数据块，并将有效的数据块迁移到新的位置，并更新父节点信息。 
+*   **为什么gc_data_segment要有预读NAT,数据块的父亲node节点以及inode节点的阶段:** 因为垃圾回收和LFS普通的写操作不同。普通的LFS写操作因为是直接往文件系统末尾追加形式写入,所以并不需要事先知道原数据的数据块,而原数据块被存的地方只有两个,inode或者直接数据块。但是gc的时候,我们就得知道原数据块地址在哪了。我们手里有的只有summary_block的nid。那首先我们必须根据这些nid在NAT表中找到对应的node数据块的物理块地址。这就意味着我们必须把所有nid相关的NAT数据块读到内存中。接下来,我们要想获取summary_block中所有的真实数据块地址,就必须取得所有的node数据块,无论它是一个inode还是一个直接node数据块。由于我们事先是不知道这个数据segment中的数据块的父亲到底是一个inode还是一个直接node块,因此我们要把nid对应的所有数据块和从nid里拿到的inode号对应的块全部读到内存。
 *   **参数:**
     *   `struct f2fs_sb_info *sbi`: 文件系统超级块信息。
     *   `struct f2fs_summary *sum`: 指向当前 segment 的 Summary Block 的指针。
