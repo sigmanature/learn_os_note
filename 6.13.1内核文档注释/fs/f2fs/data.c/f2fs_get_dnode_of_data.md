@@ -315,7 +315,7 @@ if (level < 0)
                 *   `f2fs_alloc_nid_done(sbi, nids[i]);`: **通知 NID 分配器，NID `nids[i]` 分配完成**。  **用于 NID 分配器的资源管理和统计。**
                 *   `done = true;`: **设置 `done` 标志为 `true`，表示当前层级的节点页面已经获取 (通过分配新节点)。**
         *   ```c
-else if (mode == LOOKUP_NODE_RA && i == level && level > 1) {
+            else if (mode == LOOKUP_NODE_RA && i == level && level > 1) {
 				npage[i] = f2fs_get_node_page_ra(parent, offset[i - 1]);
 				if (IS_ERR(npage[i])) {
 					err = PTR_ERR(npage[i]);
@@ -323,26 +323,26 @@ else if (mode == LOOKUP_NODE_RA && i == level && level > 1) {
 				}
 				done = true;
 			}
-```
+            ```
             **预读节点页面逻辑 (当 `mode == LOOKUP_NODE_RA` 且当前层级为最后一层时执行)**。  **如果查找模式 `mode` 为 `LOOKUP_NODE_RA` (表示预读查找节点)，并且当前层级 `i` 为 *最后一层* (`i == level`) 且节点路径层级 `level` *大于 1* (表示不是直接 Inode 指针)，则 *尝试预读节点页面*。**  **预读优化通常只在 Dnode 树的最后一层进行，避免过度的预读开销。**
                 *   `mode == LOOKUP_NODE_RA && i == level && level > 1`: 条件判断：查找模式为 `LOOKUP_NODE_RA`，当前层级为最后一层，且节点路径层级大于 1。
                 *   `npage[i] = f2fs_get_node_page_ra(parent, offset[i - 1]);`: **调用 `f2fs_get_node_page_ra` 函数，从 *父节点页面 `parent`* 中，根据 *当前层级节点在父节点中的偏移量 `offset[i - 1]`*，*尝试预读子节点 (当前层级节点) 的页面*，并将结果存储在 `npage[i]` 中**。  **`f2fs_get_node_page_ra` 函数尝试从 Page Cache 中获取节点页面，如果未命中，则触发预读操作，但 *不阻塞等待预读完成*，而是立即返回。**  **预读操作会在后台异步进行。**
-                *   ```c
-if (IS_ERR(npage[i])) {
+            *   ```c
+                    if (IS_ERR(npage[i])) {
 					err = PTR_ERR(npage[i]);
 					goto release_pages;
-				}
-```
-                    **错误处理：检查 `f2fs_get_node_page_ra` 的返回值。  如果 `npage[i]` 是错误指针 (表示预读节点页面失败)，则跳转到 `release_pages` 标签，进行错误处理和资源释放。**  **即使预读失败，也 *不影响 Dnode 树的正常遍历*，因为预读只是一个优化操作，不是必须的。**
+				    }
+                    ```
+            **错误处理：检查 `f2fs_get_node_page_ra` 的返回值。  如果 `npage[i]` 是错误指针 (表示预读节点页面失败)，则跳转到 `release_pages` 标签，进行错误处理和资源释放。**  **即使预读失败，也 *不影响 Dnode 树的正常遍历*，因为预读只是一个优化操作，不是必须的。**
                 *   `done = true;`: **设置 `done` 标志为 `true`，表示当前层级的节点页面已经获取 (通过预读)。**
         *   ```c
-if (i == 1) {
+            if (i == 1) {
 				dn->inode_page_locked = false;
 				unlock_page(parent);
 			} else {
 				f2fs_put_page(parent, 1);
 			}
-```
+            ```
             **页面解锁和释放 (在遍历完每一层节点后执行)**。
                 *   `if (i == 1)`: 条件判断：当前层级是否为第一层 (`i == 1`)。  **第一层节点是 Indirect Node，其父节点是 Inode 节点。**
                 *   `dn->inode_page_locked = false;`: **如果是第一层节点，则 *设置 `dnode_of_data` 结构体 `dn` 的 `inode_page_locked` 成员为 `false`，表示 Inode 页面 *解锁*。**  **在遍历完第一层节点后，可以解锁 Inode 页面，允许其他操作访问 Inode 页面，提高并发性。**
@@ -350,7 +350,7 @@ if (i == 1) {
                 *   `else`: **如果当前层级 *不是第一层* (表示是更深层级的 Indirect Node)**。
                 *   `f2fs_put_page(parent, 1);`: **释放父节点页面 `parent` (上一层级的 Indirect Node 页面)**。  **`f2fs_put_page` 函数用于释放页面，减少页面在内存中的驻留时间，回收内存资源。**  `1` 可能表示某种页面释放行为，需要查看 `f2fs_put_page` 函数的实现才能确定具体含义。
         *   ```c
-if (!done) {
+                if (!done) {
 				npage[i] = f2fs_get_node_page(sbi, nids[i]);
 				if (IS_ERR(npage[i])) {
 					err = PTR_ERR(npage[i]);
@@ -358,27 +358,27 @@ if (!done) {
 					goto release_out;
 				}
 			}
-```
+            ```
             **获取子节点页面 (如果之前没有通过预读或分配获取)**。
                 *   `if (!done)`: 条件判断：`done` 标志是否为 `false`。  **如果 `done` 为 `false`，表示当前层级的节点页面 *尚未获取* (既没有通过分配新节点获取，也没有通过预读获取)。**
                 *   `npage[i] = f2fs_get_node_page(sbi, nids[i]);`: **调用 `f2fs_get_node_page` 函数，根据 *超级块信息 `sbi`* 和 *当前层级节点的 NID `nids[i]`*，从 Page Cache 或磁盘 *获取子节点 (当前层级节点) 的页面*，并将结果存储在 `npage[i]` 中**。  **这是获取节点页面的 *主要路径*，用于获取 Dnode 树中每一层节点的页面数据。**
-                *   ```c
-if (IS_ERR(npage[i])) {
+            *   ```c
+                    if (IS_ERR(npage[i])) {
 					err = PTR_ERR(npage[i]);
 					f2fs_put_page(npage[0], 0);
 					goto release_out;
 				}
-```
-                    **错误处理：检查 `f2fs_get_node_page` 的返回值。  如果 `npage[i]` 是错误指针 (表示获取子节点页面失败)，则进行错误处理。**
+                ```
+                **错误处理：检查 `f2fs_get_node_page` 的返回值。  如果 `npage[i]` 是错误指针 (表示获取子节点页面失败)，则进行错误处理。**
                     *   `err = PTR_ERR(npage[i]);`: **获取错误指针 `npage[i]` 对应的错误码，并赋值给 `err`**。
                     *   `f2fs_put_page(npage[0], 0);`: **释放 Inode 页面 `npage[0]`**。  **在 Dnode 树遍历过程中发生错误，需要释放已经获取的 Inode 页面，避免资源泄漏。**  `0` 可能表示正常情况下的页面释放行为。
                     *   `goto release_out;`: **跳转到 `release_out` 标签，进行错误处理和资源释放。**
         *   ```c
-if (i < level) {
+            if (i < level) {
 				parent = npage[i];
 				nids[i + 1] = get_nid(parent, offset[i], false);
 			}
-```
+            ```
             **准备下一层级遍历 (如果当前层级 *不是最后一层*)**。
                 *   `if (i < level)`: 条件判断：当前层级 `i` 是否 *小于节点路径层级 `level`*。  **如果 `i < level`，表示 Dnode 树遍历 *尚未到达最后一层*，还需要继续遍历下一层。**
                 *   `parent = npage[i];`: **更新 `parent` 指针，指向 *当前层级的节点页面 `npage[i]`*。**  **在下一轮循环中，`npage[i]` 将成为下一层节点的父节点。**
