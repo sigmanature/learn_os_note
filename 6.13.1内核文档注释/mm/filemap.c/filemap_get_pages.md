@@ -1,6 +1,7 @@
  **相关函数**
  *	[filemap_read](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_read.md)
  *	[filemap_get_read_batch](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_get_read_batch.md)
+ *	[page_cache_sync_readahead](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/include/linux/pagemap.h/page_cache_sync_readahead.md)
  好的，非常棒！找到了 `filemap_get_pages` 和 `pos_same_folio` 的代码，这正是我们深入理解 `filemap_read` 如何获取页面的关键。让我们逐步解析这些代码。
 
 **1. `pos_same_folio` 函数解析**
