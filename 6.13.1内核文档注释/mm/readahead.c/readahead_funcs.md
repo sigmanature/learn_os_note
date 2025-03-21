@@ -494,5 +494,4 @@ EXPORT_SYMBOL_GPL(page_cache_ra_unbounded);
 *   **内存管理**:  强制预读分块为 2MB 单位，以及预分配 folio 的机制，都是为了控制预读操作的内存占用，避免一次性锁定过多内存。
 
 希望这个详细的解析能够帮助您更深入地理解 Linux 内核的同步预读机制。如果您还有其他问题，或者想继续深入研究其他函数，请随时提出。
-<iframe src="./test.html" width="800" height="600"></iframe>
 
