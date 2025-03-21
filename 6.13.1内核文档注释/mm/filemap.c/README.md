@@ -29,9 +29,16 @@ graph LR
 A[page_cache_sync_readahead]-->B[page_cache_sync_ra]-->C{如果可能是随机读?}
 C--是-->E[do_page_cache_ra]-->G[page_cache_ra_unbounded]
 C--否-->F[page_cache_ra_order]-->H{不支持大页面?}--是-->E
-H--否-->I[自适应预读阶数分配]
+H--否-->I[自适应预读阶数分配]-->J[read_pages]
 click E "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/readahead_funcs.md"
-click F "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/pade_cache_ra_order.md"
+click F "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/page_cache_ra_order.md"
 click B "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/readahead_funcs.md"
 click G "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/readahead_funcs.md"
+click J "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/read_pages.md"
+```
+read_pages函数是真正执行所有预读逻辑的函数。它会调用特定文件系统的预读接口。这里我们以f2fs为例子看一下调用流程图:
+```mermaid
+graph LR
+A[read_pages]-->B[f2fs_readahead]
+click B "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_readahead.md"
 ```
