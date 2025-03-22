@@ -41,4 +41,10 @@ read_pages函数是真正执行所有预读逻辑的函数。它会调用特定�
 graph LR
 A[read_pages]-->B[f2fs_readahead]
 click B "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_readahead.md"
+B-->C{压缩后端是否就绪?}
+C--否-->return
+C--是-->D{是否有inline数据?}
+D-->是-->return
+D-->否-->E[f2fs_mpage_read_pages]
+click E "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_mpage_read_pages.md"
 ```
