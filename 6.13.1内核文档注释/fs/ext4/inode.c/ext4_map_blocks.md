@@ -1,3 +1,5 @@
+ **相关函数**
+ * [ext4_mpage_readpages](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/ext4/inode.c/ext4_mpage_readpages.md)
  好的，我们来深入分析 `ext4_map_blocks` 函数，并着重理解它如何处理 extent 和传统的间接块映射，以及它在 `ext4_mpage_readpages` 中扮演的角色。
 
 ```c
