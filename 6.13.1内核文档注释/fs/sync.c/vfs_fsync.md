@@ -43,208 +43,35 @@ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 
 **c) `f2fs_sync_file(struct file *file, loff_t start, loff_t end, int datasync)`**
 
-
+* [f2fs_sync_file](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_sync_file.md)
 
 **d) `f2fs_do_sync_file(struct file *file, loff_t start, loff_t end, int datasync, bool atomic)`**
 
-
+[f2fs_do_sync_file](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_sync_file.md)
 
 **e) `file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)`**
 
-```c
-int file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)
-{
-	int err = 0, err2;
-	struct address_space *mapping = file->f_mapping;
 
-	if (lend < lstart)
-		return 0;
-
-	if (mapping_needs_writeback(mapping)) {
-		err = __filemap_fdatawrite_range(mapping, lstart, lend,
-						 WB_SYNC_ALL);
-		/* See comment of filemap_write_and_wait() */
-		if (err != -EIO)
-			__filemap_fdatawait_range(mapping, lstart, lend);
-	}
-	err2 = file_check_and_advance_wb_err(file);
-	if (!err)
-		err = err2;
-	return err;
-}
-```
-
-* **功能:**  写回并等待指定文件范围的数据页。
-* **参数:**
-    * `file`:  指向文件的 `file` 结构体指针。
-    * `lstart`, `lend`:  要写回的字节范围。
-* **操作:**
-    1. **检查范围:**  如果 `lend < lstart`，表示范围无效，直接返回成功 (0)。
-    2. **检查是否需要 writeback:**  调用 `mapping_needs_writeback(mapping)` 检查 `address_space` 是否需要 writeback (例如，是否有脏页)。
-    3. **调用 `__filemap_fdatawrite_range` 启动写回:**  如果需要 writeback，调用 `__filemap_fdatawrite_range` 函数，**启动针对指定范围的数据页的写回操作**，同步模式为 `WB_SYNC_ALL`。
-    4. **调用 `__filemap_fdatawait_range` 等待写回完成:**  如果 `__filemap_fdatawrite_range` 没有返回 `-EIO` 错误 (表示没有发生严重的 I/O 错误)，则调用 `__filemap_fdatawait_range` 函数，**等待之前启动的写回操作完成**。
-    5. **检查并更新 writeback 错误:**  调用 `file_check_and_advance_wb_err` 检查是否有 writeback 过程中产生的错误，并更新 `file` 结构体中的错误状态。
-    6. **返回错误码:**  返回写回过程中遇到的错误码。
 
 **f) `__filemap_fdatawrite_range(struct address_space *mapping, loff_t start, loff_t end, int sync_mode)`**
 
-```c
-int __filemap_fdatawrite_range(struct address_space *mapping, loff_t start,
-				loff_t end, int sync_mode)
-{
-	struct writeback_control wbc = {
-		.sync_mode = sync_mode,
-		.nr_to_write = LONG_MAX,
-		.range_start = start,
-		.range_end = end,
-	};
 
-	return filemap_fdatawrite_wbc(mapping, &wbc);
-}
-```
-
-* **功能:**  启动指定范围的 mapping 脏页的 writeback 操作。
-* **参数:**
-    * `mapping`:  要写回的 `address_space` 结构体。
-    * `start`, `end`:  要写回的字节范围。
-    * `sync_mode`:  同步模式 (`WB_SYNC_ALL`)。
-* **操作:**
-    1. **初始化 `writeback_control` 结构体 `wbc`:**  设置 `wbc` 的 `sync_mode`, `nr_to_write`, `range_start`, `range_end` 等字段，**配置 writeback 操作的参数**。
-    2. **调用 `filemap_fdatawrite_wbc`:**  调用 `filemap_fdatawrite_wbc` 函数，**使用配置好的 `wbc` 结构体，进一步执行 writeback 操作**。
 
 **g) `filemap_fdatawrite_wbc(struct address_space *mapping, struct writeback_control *wbc)`**
 
-```c
-int filemap_fdatawrite_wbc(struct address_space *mapping,
-			   struct writeback_control *wbc)
-{
-	int ret;
 
-	if (!mapping_can_writeback(mapping) ||
-	    !mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-		return 0;
-
-	wbc_attach_fdatawrite_inode(wbc, mapping->host);
-	ret = do_writepages(mapping, wbc);
-	wbc_detach_inode(wbc);
-	return ret;
-}
-```
-
-* **功能:**  使用提供的 `writeback_control` 结构体，调用 `writepages` 操作来启动 mapping 的脏页写回。
-* **参数:**
-    * `mapping`:  要写回的 `address_space` 结构体。
-    * `wbc`:  `writeback_control` 结构体，包含 writeback 配置信息。
-* **操作:**
-    1. **检查是否可以 writeback:**  调用 `mapping_can_writeback(mapping)` 检查 `address_space` 是否支持 writeback。
-    2. **检查是否有脏页:**  调用 `mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)` 检查 `address_space` 是否有标记为 `PAGECACHE_TAG_DIRTY` 的脏页。  如果没有，则无需写回，直接返回成功 (0)。
-    3. **关联 inode 到 `wbc`:**  调用 `wbc_attach_fdatawrite_inode(wbc, mapping->host)` 将 inode 关联到 `writeback_control` 结构体，用于 writeback 记账和 cgroup 管理。
-    4. **调用 `do_writepages` 执行写回:**  **关键步骤！** 调用 `do_writepages(mapping, wbc)` 函数，**真正执行数据页的写回操作**。  `do_writepages` 会进一步调用文件系统 (例如，F2FS) 提供的 `writepages` 或 `writepage` address_space operations。
-    5. **解除 inode 与 `wbc` 的关联:**  调用 `wbc_detach_inode(wbc)` 解除 inode 与 `writeback_control` 的关联。
-    6. **返回 `do_writepages` 的返回值:**  返回 `do_writepages` 函数的返回值，表示 writeback 操作的结果。
 
 **h) `do_writepages(struct address_space *mapping, struct writeback_control *wbc)`**
 
-```c
-int do_writepages(struct address_space *mapping, struct writeback_control *wbc)
-{
-	int ret;
-	struct bdi_writeback *wb;
 
-	if (wbc->nr_to_write <= 0)
-		return 0;
-	wb = inode_to_wb_wbc(mapping->host, wbc);
-	wb_bandwidth_estimate_start(wb);
-	while (1) {
-		if (mapping->a_ops->writepages) {
-			ret = mapping->a_ops->writepages(mapping, wbc);
-		} else if (mapping->a_ops->writepage) {
-			ret = writeback_use_writepage(mapping, wbc);
-		} else {
-			/* deal with chardevs and other special files */
-			ret = 0;
-		}
-		if (ret != -ENOMEM || wbc->sync_mode != WB_SYNC_ALL)
-			break;
-
-		/*
-		 * Lacking an allocation context or the locality or writeback
-		 * state of any of the inode's pages, throttle based on
-		 * writeback activity on the local node. It's as good a
-		 * guess as any.
-		 */
-		reclaim_throttle(NODE_DATA(numa_node_id()),
-			VMSCAN_THROTTLE_WRITEBACK);
-	}
-	// ... (bandwidth update code) ...
-	return ret;
-}
-```
-
-* **功能:**  核心的 writepages 执行函数，负责调用文件系统提供的 `writepages` 或 `writepage` 操作，并处理 writeback 过程中的错误和重试。
-* **参数:**
-    * `mapping`:  要写回的 `address_space` 结构体。
-    * `wbc`:  `writeback_control` 结构体。
-* **操作:**
-    1. **检查 `nr_to_write`:**  如果 `wbc->nr_to_write` 小于等于 0，表示不需要写回任何页，直接返回成功 (0)。
-    2. **获取 `bdi_writeback` 结构体:**  调用 `inode_to_wb_wbc(mapping->host, wbc)` 获取与 inode 关联的 `bdi_writeback` 结构体，用于 writeback 统计和控制。
-    3. **启动带宽估计:**  `wb_bandwidth_estimate_start(wb)` 启动 writeback 带宽估计。
-    4. **循环调用 `writepages` 或 `writepage`:**  进入一个循环，在循环中：
-        * **优先调用 `writepages`:**  如果 `mapping->a_ops->writepages` 函数指针已设置 (文件系统提供了批量写回页面的 `writepages` 操作)，则调用 `mapping->a_ops->writepages(mapping, wbc)`。  **对于 F2FS 来说，会调用 `f2fs_write_data_pages` (或类似的函数，取决于文件类型)。**
-        * **备选调用 `writepage`:**  如果 `writepages` 未提供，但 `mapping->a_ops->writepage` 函数指针已设置 (文件系统提供了逐页写回的 `writepage` 操作)，则调用 `writeback_use_writepage(mapping, wbc)`，使用通用的逐页写回机制。
-        * **处理特殊文件:**  如果 `writepages` 和 `writepage` 都未提供 (例如，对于字符设备等特殊文件)，则将 `ret` 设置为 0，表示无需写回。
-        * **处理 `-ENOMEM` 错误和重试:**  如果 `writepages` 或 `writepage` 返回 `-ENOMEM` 错误 (表示内存不足)，并且同步模式是 `WB_SYNC_ALL` (同步写回)，则会进行 **内存回收节流 (reclaim_throttle)**，等待一段时间后 **重试** 写回操作。  如果不是 `-ENOMEM` 错误或不是同步写回，则跳出循环。
-    5. **更新带宽估计:**  循环结束后，更新 writeback 带宽估计 (`wb_update_bandwidth`)。
-    6. **返回 `writepages` 或 `writepage` 的返回值:**  返回最后一次 `writepages` 或 `writepage` 调用的返回值，表示 writeback 操作的结果。
 
 **i) `f2fs_write_data_pages(struct address_space *mapping, struct writeback_control *wbc)`**
 
-```c
-static int f2fs_write_data_pages(struct address_space *mapping,
-			    struct writeback_control *wbc)
-{
-	struct inode *inode = mapping->host;
 
-	return __f2fs_write_data_pages(mapping, wbc,
-			F2FS_I(inode)->cp_task == current ?
-			FS_CP_DATA_IO : FS_DATA_IO);
-}
-```
-
-* **功能:**  F2FS 文件系统用于写回数据页的 `writepages` 操作实现 (由 `do_writepages` 调用)。
-* **参数:**
-    * `mapping`:  要写回的 `address_space` 结构体。
-    * `wbc`:  `writeback_control` 结构体。
-* **操作:**  直接调用 `__f2fs_write_data_pages` 函数，并根据当前进程是否是 CP 任务 (Checkpoint 任务) 传递不同的 `io_type` 参数 (用于 I/O 统计)。
 
 **j) `__f2fs_write_data_pages(struct address_space *mapping, struct writeback_control *wbc, enum iostat_type io_type)`**
 
-```c
-static int __f2fs_write_data_pages(struct address_space *mapping,
-				   struct writeback_control *wbc,
-				   enum iostat_type io_type)
-{
-	// ... (函数代码) ...
-}
-```
 
-* **功能:**  `f2fs_write_data_pages` 的实际实现函数，负责收集脏页并调用 `f2fs_write_cache_pages` 进行写回。
-* **参数:**
-    * `mapping`:  要写回的 `address_space` 结构体。
-    * `wbc`:  `writeback_control` 结构体.
-    * `io_type`:  I/O 类型 (用于 I/O 统计)。
-* **操作 (简化流程):**
-    1. **检查 `writepage` 操作:**  检查 `mapping->a_ops->writepage` 是否已实现。 如果没有，直接返回成功 (0)。
-    2. **跳过写回 (某些情况):**  在某些条件下 (例如，POR 恢复中、inode 脏页数少于阈值且内存充足、文件碎片整理准备阶段等)，可能会跳过写回操作。
-    3. **追踪 `f2fs_writepages` 事件:**  `trace_f2fs_writepages` 用于性能追踪。
-    4. **处理同步/异步写回请求:**  根据 `wbc->sync_mode` 和全局的 writeback 请求计数器 (`sbi->wb_sync_req[DATA]`)，进行同步或异步写回处理。  避免同步和异步写回混合导致 I/O 分裂。
-    5. **获取 `writepages` 互斥锁 (如果需要):**  如果需要序列化 I/O 操作 (`__should_serialize_io`)，则获取 `sbi->writepages` 互斥锁，保证同一时刻只有一个进程执行 `writepages` 操作。
-    6. **启动 blk plug:**  `blk_start_plug(&plug)` 启动 blk plug 机制，用于合并和优化块设备 I/O 请求。
-    7. **调用 `f2fs_write_cache_pages` 执行写回:**  **关键步骤！** 调用 `f2fs_write_cache_pages(mapping, wbc, io_type)` 函数，**实际收集脏页并提交写回 I/O 请求**。  **这是我们接下来要重点分析的函数。**
-    8. **完成 blk plug:**  `blk_finish_plug(&plug)` 完成 blk plug，提交合并后的 I/O 请求。
-    9. **释放 `writepages` 互斥锁 (如果获取了):**  释放之前获取的 `sbi->writepages` 互斥锁。
-    10. **更新 inode 脏 inode 列表:**  `f2fs_remove_dirty_inode(inode)` 将 inode 从脏 inode 列表中移除 (表示正在进行写回)。
-    11. **返回 `f2fs_write_cache_pages` 的返回值:**  返回 `f2fs_write_cache_pages` 函数的返回值，表示写回操作的结果。
 
 **2. `writeback_control` 结构体的作用**
 
