@@ -3,6 +3,7 @@ Linux内存管理中所有控制脏页写回的相关函数。
 ---
 脏页标记部分:主要是从folio_mark_ditry开始通过具体文件系统aops中实现的dirty_folio延伸出的分支。不同的文件系统可能会采用不同的标记方式。其中filemap_dirty_folio可能导致写放大。
 ```mermaid
+%%{wrap:true}%%
 graph LR
 A[folio_mark_dirty]-->B{如果address_mapping还在的话?}
 B--是-->C[走aops里的dirty_folio]
@@ -20,6 +21,7 @@ click M "https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%
 click O "https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/page_writeback.c/__folio_mark_dirty.md"
 ```
 ```mermaid
+%%{wrap:true}%%
 graph LR
 A[__folio_mark_dirty]-->D[先上mapping的xa锁]-->E[在持锁的情况下,如果mapping还和folio存在关联]-->B[调用folio_acount_dirtied记账]-->C[使用xa_mark给folio标记上]
 click B "https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/page_writeback.c/folio_acount_dirtied.md"
