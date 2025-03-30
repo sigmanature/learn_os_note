@@ -51,27 +51,27 @@ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 
 **e) `file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)`**
 
-
+[file_write_and_wait_range](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/f2fs_sync_file.md)
 
 **f) `__filemap_fdatawrite_range(struct address_space *mapping, loff_t start, loff_t end, int sync_mode)`**
 
-
+[__filemap_fdatawrite_range](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/__filemap_fdatawrite_range.md)
 
 **g) `filemap_fdatawrite_wbc(struct address_space *mapping, struct writeback_control *wbc)`**
 
+[filemap_fdatawrite_wbc](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_fdatawrite_wbc.md)
 
+**h) `do_writepages(struct address_space *mapping, struct writeback_control *wdo_writepagesbc)`**
 
-**h) `do_writepages(struct address_space *mapping, struct writeback_control *wbc)`**
-
-
+[do_writepages](https://github.do_writepagescom/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/page_writeback.c/do_writepages.md)
 
 **i) `f2fs_write_data_pages(struct address_space *mapping, struct writeback_control *wbc)`**
 
-
+[f2fs_write_data_pages](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_write_data_pages.md)
 
 **j) `__f2fs_write_data_pages(struct address_space *mapping, struct writeback_control *wbc, enum iostat_type io_type)`**
 
-
+[__f2fs_write_data_pages](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/__f2fs_write_data_pages.md)
 
 **2. `writeback_control` 结构体的作用**
 
@@ -132,5 +132,4 @@ static inline void inode_inc_dirty_pages(struct inode *inode)
 我们对 `vfs_fsync` 到 `__f2fs_write_data_pages` 的函数调用链和相关数据结构进行了详细的解析。  `writeback_control` 结构体在 writeback 流程中起着核心的控制作用。  F2FS 在脏页统计、查询和跳过方面有一些优化策略。  关于 `f2fs_update_dirty_folio` 和 `inode_inc_dirty_pages` 函数中脏页计数器递增 1 的问题，我们推测 `inode->dirty_pages` 计数器可能是以 "folio" 为单位计数的，但这需要进一步的代码分析和验证。
 
 下一步，我们需要 **深入分析 `f2fs_write_cache_pages` 函数**，这是 F2FS 写回流程中的关键函数，负责实际收集脏页并提交 I/O 请求。  同时，我们也要继续 **研究 `f2fs_update_dirty_folio` 和 `inode_inc_dirty_pages` 函数**，以及 `inode->dirty_pages` 计数器的具体用途，以解答你提出的疑问，并进一步评估 F2FS 的脏页管理机制是否可能导致写放大问题。
-Let's continue our deep dive into the F2FS writeback process, focusing on `f2fs_write_cache_pages` and further investigating the dirty page accounting and potential write amplification issues.
 
