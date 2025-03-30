@@ -21,6 +21,6 @@ click O "https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%
 ```
 ```mermaid
 graph LR
-A[__folio_mark_dirty]-->先上mapping的xa锁-->在持锁的情况下,如果mapping还和folio存在关联-->B[调用folio_acount_dirtied记账]-->C[使用xa_mark给folio标记上]
+A[__folio_mark_dirty]-->D[先上mapping的xa锁]-->E[在持锁的情况下,如果mapping还和folio存在关联]-->B[调用folio_acount_dirtied记账]-->C[使用xa_mark给folio标记上]
 click B "https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/page_writeback.c/folio_acount_dirtied.md"
 ```
