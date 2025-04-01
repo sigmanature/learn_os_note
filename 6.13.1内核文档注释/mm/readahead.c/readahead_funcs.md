@@ -31,7 +31,100 @@ void page_cache_sync_readahead(struct address_space *mapping,
 `page_cache_sync_readahead` 是同步预读的入口函数，它负责初始化预读控制结构体 `readahead_control`，然后调用 `page_cache_sync_ra` 函数来执行核心的预读逻辑。它本身只是一个简单的包装函数，主要工作委托给了 `page_cache_sync_ra`。
 
 **2. `page_cache_sync_ra` 函数解析**
+```C
+void page_cache_sync_ra(struct readahead_control *ractl,
+		unsigned long req_count)
+{
+	pgoff_t index = readahead_index(ractl);/*直接返回ractl->index表示这是预读请求的第一个page index*/
+	bool do_forced_ra = ractl->file && (ractl->file->f_mode & FMODE_RANDOM);
+	/*如果 ractl->file 存在 (表示与文件关联) 并且文件以随机访问模式 (FMODE_RANDOM) 打开，则 do_forced_ra 为 true。对于随机访问模式，
+	传统的顺序预读策略可能效果不佳，因此可能需要采用不同的预读策略 (强制预读)。*/
+	struct file_ra_state *ra = ractl->ra;/*看起来是保存了预读的上下文*/
+	unsigned long max_pages, contig_count;
+	pgoff_t prev_index, miss;
 
+	/*
+	 * Even if readahead is disabled, issue this request as readahead
+	 * as we'll need it to satisfy the requested range. The forced
+	 * readahead will do the right thing and limit the read to just the
+	 * requested range, which we'll set to 1 page for this case.
+	 */
+	if (!ra->ra_pages || blk_cgroup_congested()) /*检查预读是否被禁用或块设备组是否拥塞。*/
+	{
+		if (!ractl->file)/* 如果 ractl->file 为空 (不与文件关联)，则直接返回。*/
+			return;
+		req_count = 1;/*将请求页数 req_count 设置为 1。即使预读被禁用，仍然至少读取 1 页来满足当前请求。*/
+		do_forced_ra = true;
+	}
+
+	/* be dumb */
+	if (do_forced_ra) {
+		force_page_cache_ra(ractl, req_count);
+		return;
+	}
+
+	max_pages = ractl_max_pages(ractl, req_count);/*如果要求的数量大于了
+	ra窗口,那么可以将其调整为要求的数量和在backing_dev_info硬件信息结构体里存的最优化
+	的io页面数量*/
+	prev_index = (unsigned long long)ra->prev_pos >> PAGE_SHIFT;
+	/*
+	 * A start of file, oversized read, or sequential cache miss:
+	 * trivial case: (index - prev_index) == 1
+	 * unaligned reads: (index - prev_index) == 0
+	 */
+	if (!index || req_count > max_pages || index - prev_index <= 1UL) {
+		/*如果 index 为 0，表示从文件开头开始读取。*/
+		/*如果请求页数 req_count 大于最大预读页数 max_pages，表示超大读取。*/
+		/*如果当前页索引 index 与上次读取的页索引 prev_index 的差值小于等于 1，表示顺序读取或非对齐读取。*/
+		ra->start = index;
+		ra->size = get_init_ra_size(req_count, max_pages);
+		ra->async_size = ra->size > req_count ? ra->size - req_count :
+							ra->size >> 1;
+		/*计算异步预读大小 ra->async_size。如果预读大小大于请求大小，则异步预读大小为预读大小减去请求大小，
+		否则为预读大小的一半。*/
+		/*这意味着普通的从头开始读取,超大读取,顺序读取和非对齐读取直接跳到readdit*/
+		goto readit;
+	}
+
+	/*
+	 * Query the page cache and look for the traces(cached history pages)
+	 * that a sequential stream would leave behind.
+	 */
+	rcu_read_lock();
+	miss = page_cache_prev_miss(ractl->mapping, index - 1, max_pages);
+	/*查询页缓存中上次缓存未命中的页索引 miss。page_cache_prev_miss 函数 (未提供代码) 
+	很可能在页缓存中查找当前页索引 index - 1 之前的最近一次缓存未命中的页索引，
+	用于判断是否是顺序流。*/
+	rcu_read_unlock();
+	/*此时首先index已经不可能是0 也即不可能是常规的从文件头开始读取*/
+	contig_count = index - miss - 1;
+	/*计算连续缓存页计数 contig_count。
+	表示从 miss + 1 到 index - 1 之间的页都是缓存命中的，即连续缓存页的数量。*/
+	/*
+	 * Standalone, small random read. Read as is, and do not pollute the
+	 * readahead state.
+	 */
+	if (contig_count <= req_count) {
+		/*如果连续缓存页计数 contig_count 小于等于请求页数 req_count，可
+		能被认为是随机读取或顺序性较差的读取。*/
+		do_page_cache_ra(ractl, req_count, 0);
+		return;
+	}
+	/*
+	 * File cached from the beginning:
+	 * it is a strong indication of long-run stream (or whole-file-read)
+	 */
+	/*如果 miss 为 ULONG_MAX，则将连续缓存页计数 contig_count 乘以 2，可能用于扩大预读范围。*/
+	if (miss == ULONG_MAX)
+		contig_count *= 2;
+	ra->start = index;
+	ra->size = min(contig_count + req_count, max_pages);
+	ra->async_size = 1;
+readit:
+	ractl->_index = ra->start;/*设置 ractl 中的当前预读索引 _index 为预读起始页索引 ra->start。*/
+	page_cache_ra_order(ractl, ra, 0);
+}
+```
 ```c
 void page_cache_sync_ra(struct readahead_control *ractl,
 		unsigned long req_count)
