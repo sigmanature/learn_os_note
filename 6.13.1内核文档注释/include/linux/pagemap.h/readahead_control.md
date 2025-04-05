@@ -75,7 +75,14 @@ static inline pgoff_t readahead_index(struct readahead_control *rac)
 {
 	return rac->_index;
 }
-
+/**
+ * readahead_pos - The byte offset into the file of this readahead request.
+ * @rac: The readahead request.
+ */
+static inline loff_t readahead_pos(struct readahead_control *rac)
+{
+	return (loff_t)rac->_index * PAGE_SIZE;
+}
 /**
  * readahead_count - The number of pages in this readahead request.
  * @rac: The readahead request.
