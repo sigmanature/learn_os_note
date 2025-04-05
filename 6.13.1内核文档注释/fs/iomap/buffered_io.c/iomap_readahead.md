@@ -49,148 +49,23 @@ void iomap_readahead(struct readahead_control *rac, const struct iomap_ops *ops)
 
 **2. `iomap_iter` 函数：迭代文件范围并获取映射**
 
-
+* [iomap_iter](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/iomap/iter.c/iomap_iter.md)
 
 **3. `iomap_iter_advance` 函数：迭代器状态更新**
 
+* [iomap_iter_advance](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/iomap/iter.c/iomap_iter_advance.md)
 
+**4. `xfs_read_iomap_begin` 函数分析 (XFS 文件系统的 `iomap_begin` 实现):**
 
-**4. `xfs_read_iomap_ops` 结构体和 `xfs_read_iomap_begin` 函数：XFS 提供的映射操作**
+* [xfs_read_iomap_begin](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/xfs/xfs_iomap.c/xfs_read_iomap_begin.md)
 
-```c
-const struct iomap_ops xfs_read_iomap_ops = {
-	.iomap_begin		= xfs_read_iomap_begin,
-};
-```
+---
 
-`xfs_read_iomap_ops` 定义了 XFS 文件系统用于读取操作的 `iomap_ops` 结构体，其中 `.iomap_begin` 成员指向了 `xfs_read_iomap_begin` 函数。
+**5. `xfs_bmapi_read` 函数分析:**
 
-```c
-static int
-xfs_read_iomap_begin(
-	struct inode		*inode,
-	loff_t			offset,
-	loff_t			length,
-	unsigned		flags,
-	struct iomap		*iomap,
-	struct iomap		*srcmap)
-{
-	struct xfs_inode	*ip = XFS_I(inode);
-	struct xfs_mount	*mp = ip->i_mount;
-	struct xfs_bmbt_irec	imap;
-	xfs_fileoff_t		offset_fsb = XFS_B_TO_FSBT(mp, offset);
-	xfs_fileoff_t		end_fsb = xfs_iomap_end_fsb(mp, offset, length);
-	int			nimaps = 1, error = 0;
-	bool			shared = false;
-	unsigned int		lockmode = XFS_ILOCK_SHARED;
-	u64			seq;
+* [xfs_bmapi_read](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/xfs/xfs_iomap.c/xfs_bmapi_read.md)
 
-	ASSERT(!(flags & (IOMAP_WRITE | IOMAP_ZERO)));
-
-	if (xfs_is_shutdown(mp))
-		return -EIO;
-
-	error = xfs_ilock_for_iomap(ip, flags, &lockmode);
-	if (error)
-		return error;
-	error = xfs_bmapi_read(ip, offset_fsb, end_fsb - offset_fsb, &imap,
-			       &nimaps, 0);
-	if (!error && ((flags & IOMAP_REPORT) || IS_DAX(inode)))
-		error = xfs_reflink_trim_around_shared(ip, &imap, &shared);
-	seq = xfs_iomap_inode_sequence(ip, shared ? IOMAP_F_SHARED : 0);
-	xfs_iunlock(ip, lockmode);
-
-	if (error)
-		return error;
-	trace_xfs_iomap_found(ip, offset, length, XFS_DATA_FORK, &imap);
-	return xfs_bmbt_to_iomap(ip, iomap, &imap, flags,
-				 shared ? IOMAP_F_SHARED : 0, seq);
-}
-```
-
-* **`xfs_read_iomap_begin`**:  XFS 文件系统为读取操作提供的 `iomap_begin` 实现。
-* **`struct xfs_inode *ip = XFS_I(inode);`**:  获取 XFS 特定的 inode 结构 `xfs_inode`。
-* **`xfs_fileoff_t offset_fsb = XFS_B_TO_FSBT(mp, offset);` 和 `xfs_fileoff_t end_fsb = xfs_iomap_end_fsb(mp, offset, length);`**:  将字节偏移量转换为文件系统块 (FSB) 偏移量。XFS 内部使用文件系统块作为单位。
-* **`error = xfs_ilock_for_iomap(ip, flags, &lockmode);` 和 `xfs_iunlock(ip, lockmode);`**:  对 inode 加锁，保护 inode 元数据在读取映射信息期间不被修改。这里使用共享锁 `XFS_ILOCK_SHARED`。
-* **`error = xfs_bmapi_read(ip, offset_fsb, end_fsb - offset_fsb, &imap, &nimaps, 0);`**: **核心步骤：调用 `xfs_bmapi_read` 获取块映射信息**。
-    * `ip`:  XFS inode。
-    * `offset_fsb`:  起始文件系统块偏移量。
-    * `end_fsb - offset_fsb`:  请求的文件系统块长度。
-    * `&imap`:  输出参数，用于接收块映射信息，类型为 `struct xfs_bmbt_irec`。
-    * `&nimaps`:  输入/输出参数，表示期望和实际返回的映射数量。
-    * `0`:  标志位。
-* **`error = xfs_reflink_trim_around_shared(ip, &imap, &shared);`**:  处理 reflink (copy-on-write) 场景，检查是否需要裁剪共享范围。
-* **`seq = xfs_iomap_inode_sequence(ip, shared ? IOMAP_F_SHARED : 0);`**:  获取 inode 的序列号，用于后续的验证。
-* **`return xfs_bmbt_to_iomap(ip, iomap, &imap, flags, shared ? IOMAP_F_SHARED : 0, seq);`**: **核心步骤：将 `xfs_bmbt_irec` 转换为 `iomap` 结构体**。调用 `xfs_bmbt_to_iomap` 函数，将 `xfs_bmapi_read` 返回的 XFS 特定的块映射信息 `imap` 转换为通用的 `iomap` 结构体，供上层 I/O 层使用。
-
-**5. `xfs_bmapi_read` 函数：从 XFS 元数据中读取块映射信息**
-
-```c
-int
-xfs_bmapi_read(
-	struct xfs_inode	*ip,
-	xfs_fileoff_t		bno,
-	xfs_filblks_t		len,
-	struct xfs_bmbt_irec	*mval,
-	int			*nmap,
-	uint32_t		flags)
-{
-	// ... (省略部分代码) ...
-
-	error = xfs_iread_extents(NULL, ip, whichfork);
-	if (error)
-		return error;
-
-	if (!xfs_iext_lookup_extent(ip, ifp, bno, &icur, &got))
-		eof = true;
-	end = bno + len;
-	obno = bno;
-
-	while (bno < end && n < *nmap) {
-		/* Reading past eof, act as though there's a hole up to end. */
-		if (eof)
-			got.br_startoff = end;
-		if (got.br_startoff > bno) {
-			/* Reading in a hole.  */
-			mval->br_startoff = bno;
-			mval->br_startblock = HOLESTARTBLOCK;
-			mval->br_blockcount =
-				XFS_FILBLKS_MIN(len, got.br_startoff - bno);
-			mval->br_state = XFS_EXT_NORM;
-			bno += mval->br_blockcount;
-			len -= mval->br_blockcount;
-			mval++;
-			n++;
-			continue;
-		}
-
-		/* set up the extent map to return. */
-		xfs_bmapi_trim_map(mval, &got, &bno, len, obno, end, n, flags);
-		xfs_bmapi_update_map(&mval, &bno, &len, obno, end, &n, flags);
-
-		/* If we're done, stop now. */
-		if (bno >= end || n >= *nmap)
-			break;
-
-		/* Else go on to the next record. */
-		if (!xfs_iext_next_extent(ifp, &icur, &got))
-			eof = true;
-	}
-	*nmap = n;
-	return 0;
-}
-```
-
-* **`xfs_bmapi_read`**:  XFS 的块映射信息读取函数，负责从 inode 的 extent 树中查找指定文件范围的块映射信息。
-* **`error = xfs_iread_extents(NULL, ip, whichfork);`**:  读取 inode 的 extent 树到内存中。Extent 树是 XFS 存储文件块映射关系的数据结构。
-* **`if (!xfs_iext_lookup_extent(ip, ifp, bno, &icur, &got)) eof = true;`**:  在 extent 树中查找起始文件块 `bno` 的 extent 信息。`got` 结构体 (`struct xfs_bmbt_irec`) 将会存储找到的 extent 信息。
-* **循环处理**:  循环遍历请求的文件范围，处理可能存在的 hole (空洞) 和 extent。
-    * **Hole 处理**: 如果当前位置 `bno` 位于 hole 中 (即 `got.br_startoff > bno`)，则填充 `mval` 结构体，指示这是一个 hole，并更新 `bno` 和 `len`。
-    * **Extent 处理**: 如果当前位置 `bno` 位于 extent 中，则调用 `xfs_bmapi_trim_map` 和 `xfs_bmapi_update_map` 函数（代码未提供，但推测是用于裁剪和更新 extent 信息），将 extent 信息填充到 `mval` 结构体中。
-    * **迭代到下一个 extent**:  如果当前 extent 处理完毕，并且还有剩余的文件范围，则调用 `xfs_iext_next_extent` 函数查找下一个 extent。
-* **`*nmap = n;`**:  更新实际返回的映射数量。
-* **返回值**:  返回 0 表示成功，返回错误码表示失败。
-
+---
 **6. `xfs_bmbt_to_iomap` 函数：将 XFS 块映射信息转换为通用 `iomap` 结构体**
 
 ```c
@@ -209,14 +84,14 @@ xfs_bmbt_to_iomap(
 	// ... (省略部分错误检查) ...
 
 	if (imap->br_startblock == HOLESTARTBLOCK) {
-		iomap->addr = IOMAP_NULL_ADDR;
+		iomap->addr = IOMAP_NULL_ADDR;/*根据之前imap中存的start_block信息 如果是空洞 那iomap中的块地址就是无效的*/
 		iomap->type = IOMAP_HOLE;
 	} else if (imap->br_startblock == DELAYSTARTBLOCK ||
 		   isnullstartblock(imap->br_startblock)) {
 		iomap->addr = IOMAP_NULL_ADDR;
 		iomap->type = IOMAP_DELALLOC;
 	} else {
-		xfs_daddr_t	daddr = xfs_fsb_to_db(ip, imap->br_startblock);
+		xfs_daddr_t	daddr = xfs_fsb_to_db(ip, imap->br_startblock);/*这个是磁盘块号*/
 
 		iomap->addr = BBTOB(daddr); // 磁盘块地址 (字节)
 		if (mapping_flags & IOMAP_DAX)
@@ -253,6 +128,120 @@ xfs_bmbt_to_iomap(
 * **`iomap->length = XFS_FSB_TO_B(mp, imap->br_blockcount);`**:  将文件系统块计数 (`imap->br_blockcount`) 转换为字节长度，存储在 `iomap->length` 中。
 * **`iomap->bdev = target->bt_bdev;`**:  设置 `iomap` 对应的块设备。
 * **`iomap->folio_ops = &xfs_iomap_folio_ops;`**:  设置 `iomap` 相关的 folio 操作函数。
+**7. `static loff_t iomap_readahead_iter(const struct iomap_iter *iter, struct iomap_readpage_ctx *ctx)`**
+
+```c
+static loff_t iomap_readahead_iter(const struct iomap_iter *iter,
+		struct iomap_readpage_ctx *ctx)
+{
+	loff_t length = iomap_length(iter);
+	/*拿到迭代器所有剩余需要处理的文件字节长度*/
+	loff_t done, ret;/*done 和 iter都是用文件字节类型表示的变量。done表示在这次iomap_readahead_iter调用中,目前处理的字节数。ret是循环中一次iomap_readpage_iter*/
+	/*这个循环实际上已经是第二重循环了*/
+	for (done = 0; done < length; done += ret) {
+		if (ctx->cur_folio &&
+		    offset_in_folio(ctx->cur_folio, iter->pos + done) == 0) {
+			if (!ctx->cur_folio_in_bio)
+				folio_unlock(ctx->cur_folio);
+			ctx->cur_folio = NULL;
+		}
+		if (!ctx->cur_folio) {
+			ctx->cur_folio = readahead_folio(ctx->rac);
+			ctx->cur_folio_in_bio = false;
+		}
+		ret = iomap_readpage_iter(iter, ctx, done);
+		if (ret <= 0)
+			return ret;
+	}
+
+	return done;
+}
+```
+
+* **`static loff_t iomap_readahead_iter(const struct iomap_iter *iter, struct iomap_readpage_ctx *ctx)`**:
+    * `iomap_readahead_iter` 函数负责处理 `iomap_iter` 函数返回的每个文件范围的映射信息，并进行实际的页面读取操作。
+    * `const struct iomap_iter *iter`: 指向 `iomap_iter` 结构体的常量指针，包含了当前迭代的文件范围和映射信息。
+    * `struct iomap_readpage_ctx *ctx`: 指向 `iomap_readpage_ctx` 结构体的指针，包含了预读上下文信息。
+    * `loff_t`: 函数返回类型为 `loff_t`，表示处理的长度。
+
+* **`loff_t length = iomap_length(iter);`**:
+    * 获取当前迭代需要处理的总长度，从 `iter->iomap.length` 中获取。
+
+* **`loff_t done, ret;`**:
+    * 声明两个 `loff_t` 类型的变量 `done` 和 `ret`。
+        * `done`:  用于记录已经处理的长度。
+        * `ret`:  用于存储每次 `iomap_readpage_iter` 函数调用的返回值。
+
+* **`for (done = 0; done < length; done += ret)`**:
+    * 这是一个 `for` 循环，用于迭代处理当前文件范围内的每个页面。
+    * `done = 0`:  初始化已处理长度 `done` 为 0。
+    * `done < length`:  循环条件，只要已处理长度 `done` 小于总长度 `length`，循环就继续执行。
+    * `done += ret`:  每次循环结束后，将 `ret` 的值加到 `done` 上，更新已处理长度。
+
+* **`if (ctx->cur_folio && ...)`**:
+    * 条件判断：检查是否需要切换到新的 folio。
+    * `ctx->cur_folio`:  检查 `ctx->cur_folio` 是否为空。如果不为空，表示当前正在使用一个 folio。
+    * `offset_in_folio(ctx->cur_folio, iter->pos + done) == 0`:  检查当前处理位置 `iter->pos + done` 在当前 folio 中的偏移量是否为 0。`offset_in_folio` 宏通常用于计算偏移量在一个 folio 中的位置。如果偏移量为 0，表示当前处理位置是新 folio 的起始位置。
+    * 如果条件成立（即当前有 folio 并且当前位置是新 folio 的起始位置），则需要切换到新的 folio。
+
+* **`if (!ctx->cur_folio_in_bio) folio_unlock(ctx->cur_folio);`**:
+    * 如果需要切换 folio，并且当前 folio (`ctx->cur_folio`) 没有被包含在 BIO 请求中（`!ctx->cur_folio_in_bio`），则调用 `folio_unlock(ctx->cur_folio)` 解锁当前 folio。
+
+* **`ctx->cur_folio = NULL;`**:
+    * 将 `ctx->cur_folio` 设置为 `NULL`，表示当前 folio 已经处理完毕，需要获取新的 folio。
+
+* **`if (!ctx->cur_folio)`**:
+    * 条件判断：检查 `ctx->cur_folio` 是否为空。如果为空，表示需要获取新的 folio。
+
+* **`ctx->cur_folio = readahead_folio(ctx->rac);`**:
+    * 调用 `readahead_folio(ctx->rac)` 函数，从预读控制结构体 `rac` 中获取一个新的 folio。`readahead_folio` 函数可能负责从页面缓存中分配或查找一个 folio 用于预读。
+
+* **`ctx->cur_folio_in_bio = false;`**:
+    * 将 `ctx->cur_folio_in_bio` 设置为 `false`，表示新获取的 folio 还没有被包含在 BIO 请求中。
+
+* **`ret = iomap_readpage_iter(iter, ctx, done);`**:
+    * **核心步骤：页面读取操作。** 调用 `iomap_readpage_iter` 函数进行实际的页面读取操作。
+    * `iter`:  传递 `iomap_iter` 结构体的指针，包含了当前迭代的文件范围和映射信息。
+    * `ctx`:  传递 `iomap_readpage_ctx` 结构体的指针，包含了预读上下文信息，例如当前的 folio。
+    * `done`:  传递当前已处理的长度。
+    * `iomap_readpage_iter` 函数负责根据 `iter` 中的映射信息和 `ctx` 中的 folio 信息，进行实际的页面读取操作，并将本次操作处理的长度返回。
+
+* **`if (ret <= 0) return ret;`**:
+    * 检查 `iomap_readpage_iter` 函数的返回值 `ret`。
+    * 如果 `ret` 小于等于 0，表示页面读取操作失败或遇到错误，则直接返回 `ret`，终止 `iomap_readahead_iter` 函数。
+
+* **`return done;`**:
+    * 如果 `for` 循环正常结束（即处理完当前文件范围内的所有页面），则返回 `done`，表示本次 `iomap_readahead_iter` 函数处理的总长度。
+
+**总结 `iomap_readahead_iter` 函数:**
+
+`iomap_readahead_iter` 函数负责处理 `iomap_iter` 迭代出的每个文件范围的映射信息，并进行实际的页面读取操作。它在一个循环中迭代处理当前范围内的每个页面，管理 folio 的切换和获取，并调用 `iomap_readpage_iter` 函数进行实际的页面读取。`iomap_readahead_iter` 函数的返回值表示本次处理的长度，用于更新 `iomap_iter` 迭代器的状态。
+
+---
+
+**iomap 循环机制的协同工作**
+
+这三个函数 (`iomap_readahead`, `iomap_iter`, `iomap_readahead_iter`) 协同工作，形成了一个预读 I/O 的循环机制：
+
+1. **`iomap_readahead` 启动预读**:  `iomap_readahead` 函数作为预读的入口，初始化迭代器 `iter` 和上下文 `ctx`，并启动主循环。
+
+2. **`iomap_iter` 迭代文件范围和获取映射**:  在主循环中，`iomap_readahead` 函数调用 `iomap_iter` 函数。`iomap_iter` 负责：
+    * **迭代文件范围**:  根据迭代器的状态 (`iter->pos`, `iter->len`, `iter->processed`)，确定当前需要处理的文件范围。
+    * **获取块映射信息**:  调用文件系统提供的 `ops->iomap_begin` 函数，获取当前文件范围的文件块到磁盘块的映射信息，并将映射信息存储在 `iter->iomap` 结构体中。
+    * **控制循环**:  `iomap_iter` 函数的返回值决定了 `iomap_readahead` 函数的主循环是否继续进行。返回正值表示还有更多范围需要处理，返回 0 或负值表示迭代结束或发生错误。
+
+3. **`iomap_readahead_iter` 处理映射信息和页面读取**:  对于 `iomap_iter` 返回的每个文件范围的映射信息，`iomap_readahead` 函数调用 `iomap_readahead_iter` 函数。`iomap_readahead_iter` 负责：
+    * **管理 folio**:  获取和切换 folio (页面缓存单位)，用于存储读取的数据。
+    * **页面读取**:  调用 `iomap_readpage_iter` 函数，根据 `iomap_iter` 提供的映射信息，进行实际的页面读取操作，将磁盘数据读取到 folio 中。
+    * **返回处理长度**:  返回本次 `iomap_readahead_iter` 函数处理的长度，这个长度会被 `iomap_readahead` 函数赋值给 `iter.processed`，用于更新迭代器的状态。
+
+4. **循环往复**:  `iomap_readahead` 函数的主循环会不断调用 `iomap_iter` 和 `iomap_readahead_iter`，直到 `iomap_iter` 返回 0 或负值，表示预读操作完成或发生错误。
+
+5. **提交 BIO 和清理**:  在主循环结束后，`iomap_readahead` 函数会提交可能积累的 BIO 请求，并将 folio 进行清理（例如解锁）。
+
+**总结来说，`iomap_iter` 负责迭代和获取映射，`iomap_readahead_iter` 负责处理映射和页面读取，`iomap_readahead` 协调这两个函数，形成一个完整的预读 I/O 循环机制。** 这种分工合作的设计使得预读操作可以有效地处理文件系统的块映射，并进行高效的页面读取。
+
+
 
 **总结：内存到磁盘块的映射和 I/O 提交**
 
