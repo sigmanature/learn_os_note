@@ -2,8 +2,9 @@
 
 **整体流程概览**
 
-这段代码的核心目标是实现文件系统的预读功能。预读是指在应用程序实际请求数据之前，文件系统提前读取可能需要的数据到内存中，以提高后续数据访问的效率。`iomap_readahead` 函数是预读操作的入口点，它利用 `iomap_iter` 迭代文件范围，并使用文件系统提供的 `iomap_ops` 来获取文件块到磁盘块的映射关系，最终提交 I/O 请求读取磁盘块。
-
+这段代码的核心目标是实现文件系统的预读功能。预读是指在应用程序实际请求数据之前，文件系统提前读取可能需要的数据到内存中，以提高后续数据访问的效率。`iomap_readahead` 函数是预读操作的入口点，它利用 `iomap_iter` 迭代文件范围，并使用文件系统提供的 `iomap_ops` 来获取文件块到磁盘块的映射关系，最终提交 I/O 请求读取磁盘块。<br>
+**相关数据结构**
+* [sturct readahead_control](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/include/linux/pagemap.h/readahead_control.md)<br>
 **1. `iomap_readahead` 函数：预读的入口**
 
 ```c
@@ -14,6 +15,11 @@ void iomap_readahead(struct readahead_control *rac, const struct iomap_ops *ops)
 		.pos	= readahead_pos(rac),
 		.len	= readahead_length(rac),
 	};
+	/*
+	初始化iomap_iter。其当前所在的位置被设置为预读中的起始位置(也就是用户指定的起始位置)
+	其len注意表示的是迭代器剩余要处理的长度。
+	注意在内核中的所有迭代器,
+	*/
 	struct iomap_readpage_ctx ctx = {
 		.rac	= rac,
 	};
@@ -22,11 +28,11 @@ void iomap_readahead(struct readahead_control *rac, const struct iomap_ops *ops)
 
 	while (iomap_iter(&iter, ops) > 0)
 		iter.processed = iomap_readahead_iter(&iter, &ctx); // 假设存在 iomap_readahead_iter 函数
-
-	if (ctx.bio)
-		submit_bio(ctx.bio);
+	/*迭代的后处理逻辑吧*/
+	if (ctx.bio)/*如果在整个迭代结束了bio里还有累积的bio请求*/
+		submit_bio(ctx.bio);/*提交它们*/
 	if (ctx.cur_folio) {
-		if (!ctx.cur_folio_in_bio)
+		if (!ctx.cur_folio_in_bio)/*还没很深入理解*/
 			folio_unlock(ctx.cur_folio);
 	}
 }
@@ -43,79 +49,11 @@ void iomap_readahead(struct readahead_control *rac, const struct iomap_ops *ops)
 
 **2. `iomap_iter` 函数：迭代文件范围并获取映射**
 
-```c
-int iomap_iter(struct iomap_iter *iter, const struct iomap_ops *ops)
-{
-	int ret;
 
-	if (iter->iomap.length && ops->iomap_end) {
-		ret = ops->iomap_end(iter->inode, iter->pos, iomap_length(iter),
-				iter->processed > 0 ? iter->processed : 0,
-				iter->flags, &iter->iomap);
-		if (ret < 0 && !iter->processed)
-			return ret;
-	}
-
-	trace_iomap_iter(iter, ops, _RET_IP_);
-	ret = iomap_iter_advance(iter);
-	if (ret <= 0)
-		return ret;
-
-	ret = ops->iomap_begin(iter->inode, iter->pos, iter->len, iter->flags,
-			       &iter->iomap, &iter->srcmap);
-	if (ret < 0)
-		return ret;
-	iomap_iter_done(iter);
-	return 1;
-}
-```
-
-* **`ops->iomap_end` (可选)**:  如果文件系统提供了 `iomap_end` 操作，并且 `iter->iomap.length` 不为零（表示上一次迭代有映射信息），则在开始新的迭代之前，会调用 `ops->iomap_end` 进行一些清理工作，例如释放资源。
-* **`iomap_iter_advance(iter)`**:  更新迭代器的状态，例如根据上一次迭代的处理长度 (`iter->processed`) 调整 `iter->pos` 和 `iter->len`，并重置 `iter->iomap` 和 `iter->srcmap`。
-* **`ops->iomap_begin(iter->inode, iter->pos, iter->len, iter->flags, &iter->iomap, &iter->srcmap)`**: **核心步骤：获取映射信息**。调用文件系统提供的 `iomap_begin` 操作（对于 XFS 来说是 `xfs_read_iomap_begin`），请求获取从 `iter->pos` 开始，长度为 `iter->len` 的文件范围的映射信息。
-    * `iter->inode`:  文件 inode。
-    * `iter->pos`:  文件偏移量。
-    * `iter->len`:  请求的长度。
-    * `iter->flags`:  标志位。
-    * `&iter->iomap`:  输出参数，用于接收文件块到磁盘块的映射信息。
-    * `&iter->srcmap`:  输出参数，用于接收源映射信息（在 reflink 等场景下使用，这里可能为空）。
-* **`iomap_iter_done(iter)`**:  记录和检查 `iter->iomap` 的状态，进行一些调试和断言检查。
-* **返回值**:  `iomap_iter` 返回正值表示成功获取到映射信息，可以继续迭代；返回 0 或负值表示迭代结束或发生错误。
 
 **3. `iomap_iter_advance` 函数：迭代器状态更新**
 
-```c
-static inline int iomap_iter_advance(struct iomap_iter *iter)
-{
-	bool stale = iter->iomap.flags & IOMAP_F_STALE;
-	int ret = 1;
 
-	/* handle the previous iteration (if any) */
-	if (iter->iomap.length) {
-		if (iter->processed < 0)
-			return iter->processed;
-		if (WARN_ON_ONCE(iter->processed > iomap_length(iter)))
-			return -EIO;
-		iter->pos += iter->processed;
-		iter->len -= iter->processed;
-		if (!iter->len || (!iter->processed && !stale))
-			ret = 0;
-	}
-
-	/* clear the per iteration state */
-	iter->processed = 0;
-	memset(&iter->iomap, 0, sizeof(iter->iomap));
-	memset(&iter->srcmap, 0, sizeof(iter->srcmap));
-	return ret;
-}
-```
-
-* **`stale = iter->iomap.flags & IOMAP_F_STALE;`**:  检查 `iomap` 是否被标记为 `IOMAP_F_STALE`。`IOMAP_F_STALE` 表示之前的映射可能已经过时，需要重新映射。
-* **处理上一次迭代**:
-    * 根据 `iter->processed` 更新 `iter->pos` 和 `iter->len`，移动到下一个待处理的文件范围。
-    * 如果 `iter->len` 变为 0，或者 `iter->processed` 为 0 且 `iomap` 不是 `stale`，则表示迭代完成，设置 `ret = 0`。
-* **清除迭代状态**:  重置 `iter->processed`、`iter->iomap` 和 `iter->srcmap`，为下一次迭代做准备。
-* **返回值**:  返回 1 表示可以继续迭代，返回 0 或负值表示迭代结束或发生错误。
 
 **4. `xfs_read_iomap_ops` 结构体和 `xfs_read_iomap_begin` 函数：XFS 提供的映射操作**
 
