@@ -1,7 +1,8 @@
 ```C
 /**
  * struct readahead_control - Describes a readahead request.
- *
+ * readahead_control数据结构,在预读相关函数中的使用啊,实际上很像是把用户对文件读的很多函数参数打包到了这个数据结构之中
+ * 同时又和内核中其他和预读相关以及和文件相关的数据结构产生交互。这样既避免了内核中后续处理预读逻辑的函数总是要传递很多参数。
  * A readahead request is for consecutive pages.  Filesystems which
  * implement the ->readahead method should call readahead_page() or
  * readahead_page_batch() in a loop and attempt to start I/O against
