@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="iy_iV1AbuLBldAjVNZiR" name="Page-1">
-        <mxGraphModel dx="3075" dy="359" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="3180" dy="431" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -242,49 +242,206 @@
                     <mxGeometry x="-1440" y="3163" width="150" height="40" as="geometry"/>
                 </mxCell>
                 <mxCell id="98" value="4kb的闪存块" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
-                    <mxGeometry x="-1430" y="3203" width="120" height="60" as="geometry"/>
+                    <mxGeometry x="-1802.5" y="4052" width="120" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="99" value="传统文件系统(如ext4)" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
-                    <mxGeometry x="-1645" y="3460" width="140" height="30" as="geometry"/>
+                    <mxGeometry x="-1615" y="3480" width="140" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="100" value="有专门描述扇区的数据结构buffer_head" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
                     <mxGeometry x="-1660" y="3500" width="230" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="113" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=50;" vertex="1" parent="1">
-                    <mxGeometry x="-1487.5" y="3530" width="195" height="320" as="geometry"/>
+                    <mxGeometry x="-1462.5" y="3530" width="195" height="320" as="geometry"/>
                 </mxCell>
                 <mxCell id="111" value="" style="rounded=0;whiteSpace=wrap;html=1;opacity=40;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-                    <mxGeometry x="-1735" y="3530" width="210" height="300" as="geometry"/>
+                    <mxGeometry x="-1750" y="3540" width="210" height="300" as="geometry"/>
                 </mxCell>
-                <mxCell id="108" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
-                    <mxGeometry x="-1690" y="3580" width="120" height="240" as="geometry"/>
+                <mxCell id="108" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;br&gt;(内存页面)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1710" y="3580" width="120" height="240" as="geometry"/>
                 </mxCell>
                 <mxCell id="112" value="内存视角" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
-                    <mxGeometry x="-1670" y="3540" width="70" height="30" as="geometry"/>
+                    <mxGeometry x="-1680" y="3540" width="70" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="105" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="101" target="102">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="105" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="101" target="163">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-1390" y="3640.0000000000005" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="106" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="102" target="103">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="106" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="163" target="164">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-1390" y="3690.0000000000005" as="sourcePoint"/>
+                        <mxPoint x="-1390" y="3710.0000000000005" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="107" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="103" target="104">
-                    <mxGeometry relative="1" as="geometry"/>
+                <mxCell id="107" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="164" target="165">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-1390" y="3760" as="sourcePoint"/>
+                        <mxPoint x="-1390" y="3780" as="targetPoint"/>
+                    </mxGeometry>
                 </mxCell>
-                <mxCell id="101" value="buffer_head" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                <mxCell id="101" value="buffer_head&lt;br&gt;(磁盘扇区)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
                     <mxGeometry x="-1450" y="3570" width="120" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="102" value="buffer_head" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                <mxCell id="114" value="磁盘视角" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1430" y="3540" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="116" value="" style="shape=flexArrow;endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.011;entryY=0.534;entryDx=0;entryDy=0;entryPerimeter=0;fillColor=light-dark(#c8605b, #512d2b);strokeColor=#b85450;" edge="1" parent="1" source="108" target="113">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="-1540" y="3690.0000000000005" as="sourcePoint"/>
+                        <mxPoint x="-1435" y="3630" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="117" value="建立映射" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1532.5" y="3660" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="118" value="f2fs不存在描述&lt;div&gt;扇区的数据结构&lt;/div&gt;&lt;div&gt;直接使用内存的page结构体&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1135" y="3435" width="170" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="119" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=50;" vertex="1" parent="1">
+                    <mxGeometry x="-925" y="3500" width="195" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="120" value="" style="rounded=0;whiteSpace=wrap;html=1;opacity=40;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1212.5" y="3510" width="210" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="121" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1172.5" y="3550" width="120" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="122" value="内存视角" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1142.5" y="3510" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="123" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" target="127" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-852.5" y="3590.0000000000005" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="124" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" target="128" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-852.5" y="3660.0000000000005" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="125" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" target="129" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-852.5" y="3730.0000000000005" as="sourcePoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="130" value="磁盘视角" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-892.5" y="3510" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="131" value="" style="shape=flexArrow;endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.011;entryY=0.534;entryDx=0;entryDy=0;entryPerimeter=0;fillColor=none;strokeColor=default;dashed=1;dashPattern=8 8;" edge="1" source="121" target="119" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="-1002.5" y="3660.0000000000005" as="sourcePoint"/>
+                        <mxPoint x="-897.5" y="3600" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="132" value="无映射关系" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1015" y="3620" width="80" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="133" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-892.5" y="3560" width="120" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="134" value="若安卓试图支持16kb 页面" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1980" y="4020" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="136" value="&lt;div&gt;page&lt;/div&gt;16kb" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1967.5" y="4067" width="110" height="182" as="geometry"/>
+                </mxCell>
+                <mxCell id="138" value="而闪存扇区是4kb" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1802.5" y="4020" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="139" value="期望4kb页面" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1802.5" y="4120" width="90" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="140" value="page&lt;div&gt;(4kb)&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1712.5" y="4132" width="110" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="141" value="" style="shape=cross;whiteSpace=wrap;html=1;rotation=45;fillColor=light-dark(#d82218, #512d2b);strokeColor=light-dark(#e22e28, #d7817e);" vertex="1" parent="1">
+                    <mxGeometry x="-1830" y="4162" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="142" value="文件系统不能挂载!!" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" vertex="1" parent="1">
+                    <mxGeometry x="-1857.5" y="4250" width="130" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="143" value="重映射方案,要求页面大小等于闪存大小&lt;div&gt;所以在页面大小不等于闪存大小的设备上&lt;/div&gt;&lt;div&gt;&lt;b&gt;直接失效&lt;/b&gt;&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1907.5" y="4287" width="240" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="144" value="除非为f2fs的扇区设计专用数据结构" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1098.75" y="4102" width="210" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="145" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;opacity=50;" vertex="1" parent="1">
+                    <mxGeometry x="-888.75" y="4140" width="195" height="320" as="geometry"/>
+                </mxCell>
+                <mxCell id="146" value="" style="rounded=0;whiteSpace=wrap;html=1;opacity=40;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1280" y="4150" width="320" height="300" as="geometry"/>
+                </mxCell>
+                <mxCell id="147" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;br&gt;(内存页面)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1100" y="4190" width="83.75" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="148" value="内存视角" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1155" y="4154" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="149" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" source="152" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-816.25" y="4250" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="150" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-816.25" y="4300" as="sourcePoint"/>
+                        <mxPoint x="-816.25" y="4320" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="151" style="edgeStyle=none;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="-816.25" y="4370" as="sourcePoint"/>
+                        <mxPoint x="-816.25" y="4390" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="152" value="f2fs_sector&lt;br&gt;(假想数据结构)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="-876.25" y="4180" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="156" value="磁盘视角" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-856.25" y="4150" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="157" value="" style="shape=flexArrow;endArrow=classic;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.011;entryY=0.534;entryDx=0;entryDy=0;entryPerimeter=0;fillColor=light-dark(#c8605b, #512d2b);strokeColor=#b85450;" edge="1" source="147" target="145" parent="1">
+                    <mxGeometry width="50" height="50" relative="1" as="geometry">
+                        <mxPoint x="-966.25" y="4300" as="sourcePoint"/>
+                        <mxPoint x="-861.25" y="4240" as="targetPoint"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="158" value="建立映射" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-958.75" y="4270" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="163" value="buffer_head&lt;br&gt;(磁盘扇区)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
                     <mxGeometry x="-1450" y="3640" width="120" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="103" value="buffer_head" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                <mxCell id="164" value="buffer_head&lt;br&gt;(磁盘扇区)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
                     <mxGeometry x="-1450" y="3710" width="120" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="104" value="buffer_head" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                <mxCell id="165" value="buffer_head&lt;br&gt;(磁盘扇区)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
                     <mxGeometry x="-1450" y="3780" width="120" height="50" as="geometry"/>
                 </mxCell>
-                <mxCell id="114" value="Text" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
-                    <mxGeometry x="-1420" y="3540" width="50" height="30" as="geometry"/>
+                <mxCell id="169" value="f2fs_sector&lt;br&gt;(假想数据结构)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="-876.25" y="4250" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="170" value="f2fs_sector&lt;br&gt;(假想数据结构)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="-876.25" y="4320" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="171" value="f2fs_sector&lt;br&gt;(假想数据结构)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="-870" y="4390" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="172" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;br&gt;(内存页面)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1170" y="4190" width="70" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="173" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;page&lt;br&gt;(内存页面)&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+                    <mxGeometry x="-1240" y="4190" width="70" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="174" value="" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;rotation=90;size=0.5;" vertex="1" parent="1">
+                    <mxGeometry x="-1145" y="4360" width="20" height="170" as="geometry"/>
+                </mxCell>
+                <mxCell id="176" value="复合大页" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="-1168.75" y="4450" width="70" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="177" value="4kb的闪存块" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+                    <mxGeometry x="-1430" y="3230" width="120" height="60" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>

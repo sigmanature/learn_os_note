@@ -2,6 +2,7 @@
 位操作原子性
 
 ## 用户:
+```C
 /**
  * generic_test_bit - Determine whether a bit is set
  * @nr: bit number to test
@@ -17,8 +18,9 @@ generic_test_bit(unsigned long nr, const volatile unsigned long *addr)
 	 */
 	return 1UL & (addr[BIT_WORD(nr)] >> (nr & (BITS_PER_LONG-1)));
 }
-已知BITS_PER_LONG是64
-#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
+```
+已知`BITS_PER_LONG`是`64`<br>
+`#define BIT_WORD(nr)		((nr) / BITS_PER_LONG)`
 请帮我详细推导generic_test_bit函数的作用并且呢告诉我为什么这个函数的实现是atomic的?
 
 ## ChatGPT:

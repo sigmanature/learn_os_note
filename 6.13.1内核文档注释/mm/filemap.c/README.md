@@ -30,6 +30,7 @@ A[page_cache_sync_readahead]-->B[page_cache_sync_ra]-->C{如果可能是随机�
 C--是-->E[do_page_cache_ra]-->G[page_cache_ra_unbounded]
 C--否-->F[page_cache_ra_order]-->H{不支持大页面?}--是-->E
 H--否-->I[自适应预读阶数分配]-->J[read_pages]
+click A https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c
 click E "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/readahead_funcs.md"
 click F "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/page_cache_ra_order.md"
 click B "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/readahead_funcs.md"
