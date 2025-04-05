@@ -81,7 +81,7 @@ static inline pgoff_t readahead_index(struct readahead_control *rac)
  */
 static inline loff_t readahead_pos(struct readahead_control *rac)
 {
-	return (loff_t)rac->_index * PAGE_SIZE;
+	return (loff_t)rac->_index * PAGE_SIZE;/*返回预读控制中的文件位置。实质是将起始页索引以字节为单位返回。比较重要的用途是初始化iomap_iter数据结构*/
 }
 /**
  * readahead_count - The number of pages in this readahead request.
