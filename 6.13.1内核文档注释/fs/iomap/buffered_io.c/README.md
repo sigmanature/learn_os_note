@@ -1,5 +1,13 @@
 iomap框架进行buffered_io的核心函数。这其中进行buffer_read最核心的函数便是iomap_readahead。以xfs为例,我们来看看iomap_readahead的函数调用流程:
 ```mermaid
+%%{init: {
+  "theme": "default",
+  "themeConfig": {
+    "themeVariables": {
+      "fontSize": "32px"  // 设置当前代码块中 Mermaid 图表的字号为 32px
+    }
+  }
+}}%%
 graph LR
     subgraph c[**iomap_iter_advance**]
         1{如果iomap中有映射的字节长度}
