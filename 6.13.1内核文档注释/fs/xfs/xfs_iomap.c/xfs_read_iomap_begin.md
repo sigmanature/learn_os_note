@@ -19,6 +19,8 @@ xfs_read_iomap_begin(
 	xfs_fileoff_t		end_fsb = xfs_iomap_end_fsb(mp, offset, length);
 	/*计算 I/O 操作范围的结束文件系统块偏移量*/
 	int			nimaps = 1, error = 0;
+    /*nimaps是最重要的变量没有之一
+    它控制xfs_bmapi_read最多返回一条记录*/
 	bool			shared = false;
 	unsigned int		lockmode = XFS_ILOCK_SHARED;
 	u64			seq;

@@ -6,8 +6,10 @@ graph LR
         1-->是-->iter的pos加上processed-->iter的剩余长度减去processed-->2[重置iomap和iter的processed为0]
         1-->否-->2
     end
+    subgraph d[**xfs_read_iomap_begin**]
+    end
     subgraph b["**iomap_iter(&iter,ops)**"]
-        G[iomap_end前处理]-->c-->I["ops->iomap_begin"]-->J[iomap_iter_done]
+        G[iomap_end前处理]-->c-->I["ops->iomap_begin(iter->pos,iter->length)"]-->J[xfs_read_iomap_begin]-->K[iomap_iter_done]
     end
     style b fill:#775,opacity:0.4
     style c fill:#654,opacity:0.4
