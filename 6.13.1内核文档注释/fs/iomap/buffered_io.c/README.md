@@ -9,7 +9,7 @@ graph LR
     subgraph d[**xfs_read_iomap_begin**]
     3[将pos和length转成fs的起始结束块]-->4["调用xfs_bmapi_read,获取一条映射记录"]-->5[用xfs_bmbt_to_iomap将映射记录转为iomap]
     end
-    subgraph b["**iomap_iter(&iter,ops)**"] 
+    subgraph b['**iomap_iter**']
         G[iomap_end前处理]-->c-->I["ops->iomap_begin(iter->pos,iter->length)"]-->d-->K[iomap_iter_done]
     end
     style b fill:#775,opacity:0.4
