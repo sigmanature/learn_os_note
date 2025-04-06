@@ -41,8 +41,21 @@ classDiagram
 	xfs_fsblock_t	br_startblock;	/* starting block number */
 	xfs_filblks_t	br_blockcount;	/* number of blocks */
 	xfs_exntst_t	br_state;	/* extent state */
-} 
+    } 
+    class D["iomap"] {
+	u64			addr; /* disk offset of mapping, bytes */
+	loff_t			offset;	/* file offset of mapping, bytes */
+	u64			length;	/* length of mapping, bytes */
+	u16			type;	/* type of mapping */
+	u16			flags;	/* flags for mapping */
+	struct block_device	*bdev;	/* block device for I/O */
+	struct dax_device	*dax_dev; /* dax_dev for dax operations */
+	void			*inline_data;
+	void			*private; 
+	const struct iomap_folio_ops *folio_ops;
+	u64			validity_cookie; /* used with .iomap_valid() */
+}
     A --> B : offset_fsb = XFS_B_TO_FSBT(mp, offset) <br> end_fsb = xfs_iomap_end_fsb(mp, offset, length)
     B --> C :xfs_bmapi_read(ip, offset_fsb, end_fsb - offset_fsb, &imap,&nimaps, 0)
-
+    C --> D :daddr = xfs_fsb_to_db(ip, imap->br_startblock)<br>iomap->addr = BBTOB(daddr)<br>iomap->offset = XFS_FSB_TO_B(mp, imap->br_startoff)<br>iomap->length = XFS_FSB_TO_B(mp, imap->br_blockcount)
 ```
