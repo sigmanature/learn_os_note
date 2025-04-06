@@ -16,8 +16,9 @@ graph LR
     style c fill:#654,opacity:0.4
     style d fill:#654,opacity:0.4
     subgraph a[**iomap_readahead**]
-        A[初始化iomap_iter]-->B[初始化iomap_readpage_ctx]-->b-->C{"iter中的长度没处理完"}
-        C--是-->D[iomap_readahead_iter]-->b
+        A[初始化iomap_iter]-->B[初始化iomap_readpage_ctx]-->bg[iomap_iter开始]-->b
+        b-->C{"iter中的长度没处理完"}
+        C--是-->D[iomap_readahead_iter]-->bg
         C--否-->E[后处理逻辑,提交剩余bio]-->F[处理ctx中的folio]
     end
     
