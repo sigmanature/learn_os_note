@@ -42,7 +42,7 @@ classDiagram
 	xfs_filblks_t	br_blockcount;	/* number of blocks */
 	xfs_exntst_t	br_state;	/* extent state */
 } 
-    A --> B :offset_fsb = XFS_B_TO_FSBT(mp, offset) \n end_fsb = xfs_iomap_end_fsb(mp, offset, length)
+    A --> B : offset_fsb = XFS_B_TO_FSBT(mp, offset) <br> end_fsb = xfs_iomap_end_fsb(mp, offset, length)
     B --> C :xfs_bmapi_read(ip, offset_fsb, end_fsb - offset_fsb, &imap,&nimaps, 0)
 
 ```
