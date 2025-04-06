@@ -6,8 +6,11 @@ graph LR
         1-->是-->iter的pos加上processed-->iter的剩余长度减去processed-->2[重置iomap和iter的processed为0]
         1-->否-->2
     end
+    subgraph 5[xfs_bmbt_to_iomap]
+    o[xfs的extent的起始文件字节给iomap.addr]-->r[xfs的extent的起始块字节给iomap.offset]-->p[xfs的extent的块数量转化为字节给iomap.length]
+    end
     subgraph d[**xfs_read_iomap_begin**]
-    3[将pos和length转成fs的起始结束块]-->4["调用xfs_bmapi_read,获取一条映射记录"]-->5[用xfs_bmbt_to_iomap将映射记录转为iomap]
+    3[将pos和length转成fs的起始结束块]-->4["调用xfs_bmapi_read,获取一条映射记录"]-->5
     end
     subgraph b['**iomap_iter**']
         G[iomap_end前处理]-->c-->I["ops->iomap_begin(iter->pos,iter->length)"]-->d-->K[iomap_iter_done]
