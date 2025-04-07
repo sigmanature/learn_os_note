@@ -50,8 +50,8 @@ classDiagram
         struct iomap iomap;
     }
     class B["xfs_fileoff_t"]{
-    offset_fsb
-    end_fsb
+    offset_fsb /*从pos转化过来的文件系统块号*/
+    end_fsb /*结束的文件系统块号*/
     }
     class C["xfs_bmbt_irec"]{
 	xfs_fileoff_t	br_startoff;	/* starting file offset */
