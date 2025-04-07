@@ -11,7 +11,7 @@ static inline void folio_attach_private(struct folio *folio, void *data)
 {
 	folio_get(folio);/*先增加引用计数*/
 	folio->private = data;/*然后改变指针指向*/
-	folio_set_private(folio);
+	folio_set_private(folio);/**/
 }
 /**
  * folio_change_private - Change private data on a folio.

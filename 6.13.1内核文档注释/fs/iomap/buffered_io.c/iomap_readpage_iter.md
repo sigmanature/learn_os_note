@@ -8,7 +8,8 @@ static loff_t iomap_readpage_iter(const struct iomap_iter *iter,
 {
 	const struct iomap *iomap = &iter->iomap;/*先拿到iomap*/
 	loff_t pos = iter->pos + offset;/*这个offset是iomap_readahead外循环的done变量
-    表示已经在当前这个iomap中处理的字节量。这个offset是在[0,iomap_length(iter)]之间的*/
+    表示已经在当前这个iomap中处理的字节量。这个offset是在[0,iomap_length(iter)]之间的
+    那么pos实际上就是整个文件中的绝对位置偏移*/
 	loff_t length = iomap_length(iter) - offset;/*显然是指当前这个iomap还剩多少字节要处理*/
 	struct folio *folio = ctx->cur_folio;
 	struct iomap_folio_state *ifs;
