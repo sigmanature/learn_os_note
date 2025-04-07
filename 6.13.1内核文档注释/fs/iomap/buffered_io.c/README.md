@@ -73,6 +73,6 @@ classDiagram
 	u64			validity_cookie; /* used with .iomap_valid() */
 }
     A --> B : offset_fsb = XFS_B_TO_FSBT(mp, offset) <br> /*实质上就是将pos取整除法除块大小*/<br>end_fsb = xfs_iomap_end_fsb(mp, offset, length)
-    B --> C :xfs_bmapi_read(ip, offset_fsb, end_fsb - offset_fsb, &imap,&nimaps, 0)
+    B --> C :xfs_bmapi_read(ip, offset_fsb, end_fsb - offset_fsb, &imap,&nimaps, 0)<br>bno=offset_fsb<br>br_startoff=bno
     C --> D :daddr = xfs_fsb_to_db(ip, imap->br_startblock)<br>iomap->addr = BBTOB(daddr)<br>iomap->offset = XFS_FSB_TO_B(mp, imap->br_startoff)<br>iomap->length = XFS_FSB_TO_B(mp, imap->br_blockcount)
 ```
