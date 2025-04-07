@@ -17,7 +17,9 @@ xfs_read_iomap_begin(
 	/*声明一个 `xfs_bmbt_irec` 结构 `imap`，用于存储从 `xfs_bmapi_read` 获取的块映射记录。 `xfs_bmbt_irec` 是 XFS 文件系统内部表示块映射信息的结构。*/
 	xfs_fileoff_t		offset_fsb = XFS_B_TO_FSBT(mp, offset);
 	/*将字节偏移量 `offset` 转换为文件系统块偏移量 `offset_fsb`。
-	这个应该是起始的呃文件系统块偏移了*/
+	这个应该是起始的呃文件系统块偏移了。其实很简单,就是把文件的逻辑偏移从字节单位转成文件系统块大小单位。
+	#define XFS_B_TO_FSBT(mp,b)	(((uint64_t)(b)) >> (mp)->m_sb.sb_blocklog)
+        */
 	xfs_fileoff_t		end_fsb = xfs_iomap_end_fsb(mp, offset, length);
 	/*计算 I/O 操作范围的结束文件系统块偏移量*/
 	int			nimaps = 1, error = 0;
