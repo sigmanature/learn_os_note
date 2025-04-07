@@ -31,12 +31,15 @@ graph LR
         C--是-->D[iomap_readahead_iter]-->bg
         C--否-->E[后处理逻辑,提交剩余bio]-->F[处理ctx中的folio]
     end
+    subgraph e[iomap_readahead_iter]
     
+    end
 click A "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/include/linux/iomap.h/struct_iomap_iter.md"
 click 1 "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/iomap/iter.c/iomap_iter_advance.md"
 click 3 "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/xfs/xfs_iomap.c/xfs_read_iomap_begin.md"
 click o "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/xfs/xfs_iomap.c/xfs_bmbt_to_iomap.md"
 click 4 "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/xfs/xfs_iomap.c/xfs_bmapi_read.md"
+click D "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/iomap/buffered_io.c/iomap_readahead_iter.md"
 ```
 ```mermaid
 classDiagram

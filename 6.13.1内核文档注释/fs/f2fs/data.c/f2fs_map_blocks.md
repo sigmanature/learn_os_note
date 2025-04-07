@@ -1,14 +1,14 @@
 **相关函数:**
 * [f2fs_get_dnode_of_data](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/f2fs_get_dnode_of_data.md)
 * [f2fs_map_blocks_cached](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_map_blocks_cached.md)
-* 
+* [f2fs_read_single_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_read_single_page.md)
 ```c
 int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map, int flag)
 {
 	unsigned int maxblocks = map->m_len;
 	struct dnode_of_data dn;
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
-	int mode = map->m_may_create ? ALLOC_NODE : LOOKUP_NODE;
+	int mode = map->m_may_create ? ALLOC_NODE : LOOKUP_NODE;/*进行读操作的时候肯定是后者*/
 	pgoff_t pgofs, end_offset, end;
 	int err = 0, ofs = 1;
 	unsigned int ofs_in_node, last_ofs_in_node;
@@ -28,19 +28,18 @@ int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map, int flag)
 	map->m_multidev_dio =
 		f2fs_allow_multi_device_dio(F2FS_I_SB(inode), flag);
 
-	map->m_len = 0;
+	map->m_len = 0;/*标志实际映射的块数量。这个变量其实类似xfs_bmbt_irec中的block数量*/
 	map->m_flags = 0;
 
 	/* it only supports block size == page size */
-	pgofs =	(pgoff_t)map->m_lblk;
-	end = pgofs + maxblocks;
+	pgofs =	(pgoff_t)map->m_lblk; /*从f2fs_read_single_page传进来的起始的逻辑索引*/
 
 next_dnode:
 	if (map->m_may_create)
 		f2fs_map_lock(sbi, flag);
 
 	/* When reading holes, we need its node page */
-	set_new_dnode(&dn, inode, NULL, NULL, 0);
+	set_new_dnode(&dn, inode, NULL, NULL, 0);/*先拿到node页*/
 	err = f2fs_get_dnode_of_data(&dn, pgofs, mode);
 	if (err) {
 		if (flag == F2FS_GET_BLOCK_BMAP)
@@ -50,21 +49,23 @@ next_dnode:
 		goto unlock_out;
 	}
 
-	start_pgofs = pgofs;
+	start_pgofs = pgofs;/*start_pgofs是循环的初始计数器*/
 	prealloc = 0;
 	last_ofs_in_node = ofs_in_node = dn.ofs_in_node;
 	end_offset = ADDRS_PER_PAGE(dn.node_page, inode);
-
+	/*循环开始*/
 next_block:
-	blkaddr = f2fs_data_blkaddr(&dn);
-	is_hole = !__is_valid_data_blkaddr(blkaddr);
+	blkaddr = f2fs_data_blkaddr(&dn);/*然后拿到数据块地址*/
+	is_hole = !__is_valid_data_blkaddr(blkaddr);/*空洞这里记录的是数据块有效的取反*/
 	if (!is_hole &&
 	    !f2fs_is_valid_blkaddr(sbi, blkaddr, DATA_GENERIC_ENHANCE)) {
-		err = -EFSCORRUPTED;
+		err = -EFSCORRUPTED;/*既不是空洞 又不是有效块
+		那肯定是出现文件系统污染了*/
 		goto sync_out;
 	}
 
 	/* use out-place-update for direct IO under LFS mode */
+	/*direct io 新地更新逻辑开始*/
 	if (map->m_may_create && (is_hole ||
 		(flag == F2FS_GET_BLOCK_DIO && f2fs_lfs_mode(sbi) &&
 		!f2fs_is_pinned_file(inode)))) {
@@ -131,18 +132,18 @@ next_block:
 			goto sync_out;
 		}
 	}
-
+	/*异地更新逻辑结束*/
 	if (flag == F2FS_GET_BLOCK_PRE_AIO)
-		goto skip;
+		goto skip;/*实际上就是continue*/
 
 	if (map->m_multidev_dio)
 		bidx = f2fs_target_device_index(sbi, blkaddr);
 
-	if (map->m_len == 0) {
+	if (map->m_len == 0) { /*如果m_len还是处在刚初始化的阶段*/
 		/* reserved delalloc block should be mapped for fiemap. */
 		if (blkaddr == NEW_ADDR)
 			map->m_flags |= F2FS_MAP_DELALLOC;
-		/* DIO READ and hole case, should not map the blocks. */
+		/* DIO READ and hole case, should not map the blocks. 为文件空洞的时候不建立映射?*/
 		if (!(flag == F2FS_GET_BLOCK_DIO && is_hole && !map->m_may_create))
 			map->m_flags |= F2FS_MAP_MAPPED;
 
@@ -151,7 +152,7 @@ next_block:
 
 		if (map->m_multidev_dio)
 			map->m_bdev = FDEV(bidx).bdev;
-	} else if (map_is_mergeable(sbi, map, blkaddr, flag, bidx, ofs)) {
+	} else if (map_is_mergeable(sbi, map, blkaddr, flag, bidx, ofs)) {/*重点代码,f2fs会尝试进行块映射合并,对读来说最重要*/
 		ofs++;
 		map->m_len++;
 	} else {
@@ -163,6 +164,7 @@ skip:
 	pgofs++;
 
 	/* preallocate blocks in batch for one dnode page */
+	/*预分配逻辑 很大概率对我们处理回写逻辑的时候很有帮助*/
 	if (flag == F2FS_GET_BLOCK_PRE_AIO &&
 			(pgofs == end || dn.ofs_in_node == end_offset)) {
 
@@ -190,8 +192,8 @@ skip:
 	if (pgofs >= end)
 		goto sync_out;
 	else if (dn.ofs_in_node < end_offset)
-		goto next_block;
-
+		goto next_block;/*循环判断和跳转*/
+	/*后处理逻辑开始*/
 	if (flag == F2FS_GET_BLOCK_PRECACHE) {
 		if (map->m_flags & F2FS_MAP_MAPPED) {
 			unsigned int ofs = start_pgofs - map->m_lblk;
