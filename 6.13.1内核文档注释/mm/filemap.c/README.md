@@ -15,7 +15,7 @@ graph LR
 A[filemap_read]
     click A "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_read.md"
 A-->B[filemap_get_pages]
-    click B "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_get_pages"
+    click B "https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/filemap_get_pages.md"
 B-->C[filemap_get_read_batch]
 B-->D{"folio_batch_count(fbatch)"}
 D--为0-->E[page_cache_sync_readahead]-->F[filemap_get_read_batch]
