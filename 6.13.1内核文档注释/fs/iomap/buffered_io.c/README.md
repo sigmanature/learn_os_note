@@ -29,7 +29,7 @@ graph LR
     subgraph a[**iomap_readahead**]
         A[初始化iomap_iter]-->B[用rac初始化iomap_readpage_ctx,folio和bio为空]-->bg[iomap_iter开始]-->b
         b-->C{"iter中的长度没处理完"}
-        C--是-->D[iomap_readahead_iter]-->bg
+        C--是-->D[iomap_readahead_iter]-->proc[将返回值赋值给iter->processed]-->bg
         C--否-->E[后处理逻辑,提交剩余bio]-->F[处理ctx中的folio]
     end
     subgraph e[iomap_readahead_iter]
