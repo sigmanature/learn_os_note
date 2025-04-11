@@ -1,6 +1,6 @@
  **相关函数:**
 * [f2fs_map_blocks](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_map_blocks.md)
-* 
+* [struct_extent_info](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/f2fs.h/struct_extent_info.md)
  ```c
 static bool f2fs_map_blocks_cached(struct inode *inode,
 		struct f2fs_map_blocks *map, int flag)
@@ -11,13 +11,13 @@ static bool f2fs_map_blocks_cached(struct inode *inode,
 	struct extent_info ei = {};
 
 	if (!f2fs_lookup_read_extent_cache(inode, pgoff, &ei))
-		return false;
+		return false;/*注意虽然说传进去的key是一个pgoff但这是一个区间查询 也就是pgoff只要落入一个extent所在的区间就能直接返回这个extent信息*/
 
-	map->m_pblk = ei.blk + pgoff - ei.fofs;
-	map->m_len = min((pgoff_t)maxblocks, ei.fofs + ei.len - pgoff);
+	map->m_pblk = ei.blk + pgoff - ei.fofs;/*返回给map的物理块起始地址是当前的页索引减去extent的起始的文件索引(也就是当前也索引相对于当前extent的长度)加上extent当前的物理块起始地址*/
+	map->m_len = min((pgoff_t)maxblocks, ei.fofs + ei.len - pgoff);/*改成min(maxblocks,el.len-(pgoff-ei.fofs)更清楚一点就是当前要求的长度和当前extent剩余的长度取最小值*/
 	map->m_flags = F2FS_MAP_MAPPED;
-	if (map->m_next_extent)
-		*map->m_next_extent = pgoff + map->m_len;
+	if (map->m_next_extent)/*如果这个map_block还没有存next_extent*/
+		*map->m_next_extent = pgoff + map->m_len;/*也就是下一个extent的开头对应的页索引*/
 
 	/* for hardware encryption, but to avoid potential issue in future */
 	if (flag == F2FS_GET_BLOCK_DIO)
