@@ -2,6 +2,7 @@
 * [f2fs_get_dnode_of_data](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/f2fs_get_dnode_of_data.md)
 * [f2fs_map_blocks_cached](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_map_blocks_cached.md)
 * [f2fs_read_single_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_read_single_page.md)
+* [f2fs_datablk_addr](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/f2fs_datablk_addr.md)
 ```c
 int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map, int flag)
 {
@@ -40,6 +41,8 @@ next_dnode:
 
 	/* When reading holes, we need its node page */
 	set_new_dnode(&dn, inode, NULL, NULL, 0);/*先拿到node页*/
+	/*f2fs_get_dnode_of_data内部是会进行多级间接指针的树形查找
+	但是呢 最终返回给f2fs_map_blocks 也就是这边看到的一直只有直接node的信息。*/
 	err = f2fs_get_dnode_of_data(&dn, pgofs, mode);
 	if (err) {
 		if (flag == F2FS_GET_BLOCK_BMAP)
@@ -55,7 +58,8 @@ next_dnode:
 	end_offset = ADDRS_PER_PAGE(dn.node_page, inode);
 	/*循环开始*/
 next_block:
-	blkaddr = f2fs_data_blkaddr(&dn);/*然后拿到数据块地址*/
+	blkaddr = f2fs_data_blkaddr(&dn);/*然后拿到数据块地址
+	因为我们详细分析过f2fs_data_blkaddr了,我们现在很笃定dn自己存的那个block_t	data_blkaddr就是node块自己的物理块地址。而我们要根据逻辑索引找的那个数据块地址必须根据f2fs_data_blkaddr计算出来*/
 	is_hole = !__is_valid_data_blkaddr(blkaddr);/*空洞这里记录的是数据块有效的取反*/
 	if (!is_hole &&
 	    !f2fs_is_valid_blkaddr(sbi, blkaddr, DATA_GENERIC_ENHANCE)) {
