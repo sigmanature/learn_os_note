@@ -82,8 +82,7 @@ xfs_bmapi_read(
 
 		/* set up the extent map to return. */
 		xfs_bmapi_trim_map(mval, &got, &bno, len, obno, end, n, flags);/*这应该就是没文件空洞的时候,从got里获取一个记录了*/
-		xfs_bmapi_update_map(&mval, &got, &bno, len, obno, end, &n, flags);
-
+		xfs_bmapi_update_map(&mval, &bno, &len, obno, end, &n, flags);
 		/* If we're done, stop now. */
 		if (bno >= end || n >= *nmap)
 			break;
