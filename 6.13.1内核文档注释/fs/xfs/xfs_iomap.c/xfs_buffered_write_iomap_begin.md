@@ -378,3 +378,7 @@ out_unlock:
 5.  **EOF 处理和预分配**：写入文件末尾时，需要计算并执行预分配 (`xfs_iomap_prealloc_size`, `prealloc_blocks`)，并考虑对齐 (`xfs_eof_alignment`)。
 6.  **锁管理**：需要在操作开始时获取 inode 锁，并在返回映射信息 *之前* 释放锁，因为后续的数据拷贝 (`iomap_write_iter`) 不需要持有 inode 锁。
 7.  **错误处理和状态跟踪**：需要仔细处理各种错误情况并正确管理各种状态标志和游标。
+
+因为这个函数是根据很多具体情况来进不同分支的。虽然是一个大函数,但是我们可以代入不同的初始条件把函数逻辑拆解开来。
+1. 假设我们不是cow inode,代码将缩减为:
+* [xfs_buffered_write_iomap_begin_no_cow]()
