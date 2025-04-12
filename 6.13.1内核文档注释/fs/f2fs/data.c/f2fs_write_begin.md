@@ -1,5 +1,9 @@
 这是 F2FS 实现逻辑的地方，该逻辑在数据可以复制到页缓存 folio 以进行缓冲写入之前需要执行。
+**相关函数**
 
+*   [prepare_atomic_write_begin](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/prepare_atomic_write_begin.md)
+
+*   [prepare_write_begin](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/prepare_write_begin.md)
 ```c
 // f2fs_write_begin: F2FS 对 address_space_operations->write_begin 的实现
 static int f2fs_write_begin(struct file *file, struct address_space *mapping,
