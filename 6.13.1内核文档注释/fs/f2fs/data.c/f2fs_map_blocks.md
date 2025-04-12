@@ -126,12 +126,12 @@ next_block:
 			}
 			break;
 		case F2FS_GET_BLOCK_DIO:
-			if (map->m_next_pgofs)
+			if (map->m_next_pgofs)/*还没设置f2fs_block_map中的next_pgofs的话 将其设置为+1*/
 				*map->m_next_pgofs = pgofs + 1;
 			break;
 		default:
 			/* for defragment case */
-			if (map->m_next_pgofs)
+			if (map->m_next_pgofs)/*还没设置f2fs_block_map中的next_pgofs的话 将其设置为+1*/
 				*map->m_next_pgofs = pgofs + 1;
 			goto sync_out;
 		}
