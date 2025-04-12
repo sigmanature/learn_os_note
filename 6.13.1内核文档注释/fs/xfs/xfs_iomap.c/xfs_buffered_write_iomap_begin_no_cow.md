@@ -75,7 +75,7 @@ xfs_buffered_write_iomap_begin(
 	eof = !xfs_iext_lookup_extent(ip, &ip->i_df, offset_fsb, &icur, &imap);
 	if (eof)
 		// 如果是 hole，暂时假设这个 hole 持续到请求范围的末尾
-		imap.br_startoff = end_fsb;
+		imap.br_startoff = end_fsb;/*和xfs_bmapi_read那里的处理逻辑一模一样把end_fsb设置为返回的irec的br_startoff*/
 	// 如果数据 fork 查找找到了覆盖 offset_fsb 的 extent
 	if (imap.br_startoff <= offset_fsb) {
 		/*
@@ -105,6 +105,7 @@ xfs_buffered_write_iomap_begin(
 		// 限制单次分配/映射的长度
 		count = min_t(loff_t, count, 1024 * PAGE_SIZE);
 		// 根据可能减小的 count 重新计算 end_fsb
+        //那就是最大允许分配1024个块
 		end_fsb = xfs_iomap_end_fsb(mp, offset, count);
 
 		// 如果配置为总是 CoW (不常见)
