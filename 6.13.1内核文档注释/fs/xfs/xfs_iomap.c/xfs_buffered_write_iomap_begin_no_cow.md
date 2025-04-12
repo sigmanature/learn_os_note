@@ -75,7 +75,7 @@ xfs_buffered_write_iomap_begin(
 	eof = !xfs_iext_lookup_extent(ip, &ip->i_df, offset_fsb, &icur, &imap);
 	if (eof)
 		// 如果是 hole，暂时假设这个 hole 持续到请求范围的末尾
-		imap.br_startoff = end_fsb;h
+		imap.br_startoff = end_fsb;
 	// 如果数据 fork 查找找到了覆盖 offset_fsb 的 extent
 	if (imap.br_startoff <= offset_fsb) {
 		/*
