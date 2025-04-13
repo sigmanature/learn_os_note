@@ -19,6 +19,15 @@ static inline unsigned int addrs_per_page(struct inode *inode,
 					get_extra_isize(inode))
 #define OFFSET_OF_END_OF_I_EXT		360
 #define SIZE_OF_I_NID			 20 //         就是5个nid的字节大小          
+#define MAX_INLINE_DATA(inode)	(sizeof(__le32) *			\
+				(CUR_ADDRS_PER_INODE(inode) -		\
+				get_inline_xattr_addrs(inode) -	\
+				DEF_INLINE_RESERVED_SIZE))
+/*这个inline数据从其计算公式可以看出来 是抢了直接指针的位置
+也就是从inode_info之后开始 删掉末尾的inline_xattr的东西
+再减去为inline保存的大小*/
+/* for inline stuff */
+#define DEF_INLINE_RESERVED_SIZE	1
 struct f2fs_inode {
 	__le16 i_mode;			/* file mode */         // 2 bytes
 	__u8 i_advise;			/* file hints */         // 1 byte

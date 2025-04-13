@@ -5,7 +5,7 @@
 // prepare_write_begin: 用于普通文件的 f2fs_write_begin 辅助函数
 static int prepare_write_begin(struct f2fs_sb_info *sbi,
 			struct folio *folio, loff_t pos, unsigned int len,
-			block_t *blk_addr, bool *node_changed)
+			block_t *blk_addr, bool *node_changed)/*最诡异的是node_changed这个变量指示是否要对文件系统做平衡操作?*/
 {
 	struct inode *inode = folio->mapping->host; // 获取 inode
 	pgoff_t index = folio->index; // 页索引
@@ -34,7 +34,6 @@ static int prepare_write_begin(struct f2fs_sb_info *sbi,
 	// 1. 如果 inode 当前有内联数据（可能需要转换）。
 	// 2. 如果写入超出当前文件末尾（可能需要分配）。
 	if (f2fs_has_inline_data(inode)) {
-		// 如果写入适合最大内联数据大小，则使用 PRE_AIO 标志，否则使用 DEFAULT。
 		if (pos + len > MAX_INLINE_DATA(inode))
 			flag = F2FS_GET_BLOCK_DEFAULT;
 		f2fs_map_lock(sbi, flag); // 获取锁
@@ -131,5 +130,18 @@ unlock_out:
 	if (locked) // 如果我们获取了锁
 		f2fs_map_unlock(sbi, flag); // 释放锁
 	return err; // 返回错误码或 0 表示成功
+}
+```
+我们先聚焦于inline数据的处理之中。
+```C
+// prepare_write_begin: 用于普通文件的 f2fs_write_begin 辅助函数
+static int prepare_write_begin(struct f2fs_sb_info *sbi,
+			struct folio *folio, loff_t pos, unsigned int len,
+			block_t *blk_addr, bool *node_changed)/*最诡异的是node_changed这个变量指示是否要对文件系统做平衡操作?*/
+{
+	/*核心还是要将pos和len转成f2fs_mapblocks 为此我们想想当有inline数据的时候 首先是看这种情况是否有特殊的控制f2fs_mapblocks的flag。
+	然后问题来了。inode中有内联数据但是不一定全不是内联数据吧。这没法保证吧。那我就得对此进行判断。我们应该能分为四种情况:*/
+	/*
+	1.pos+len>MAX_INODE_INLINE_DATA,也就是说写入的位置超过了最大的INLINE数据范围。*/
 }
 ```
