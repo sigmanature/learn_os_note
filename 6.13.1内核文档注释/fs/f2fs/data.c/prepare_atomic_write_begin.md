@@ -1,5 +1,6 @@
 专门为使用写时复制 (CoW) 的 F2FS 原子文件处理块查找/预留。
-
+**相关函数**
+* [f2fs_write_begin](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_write_begin.md)
 ```c
 // prepare_atomic_write_begin: 用于原子文件 (CoW) 的 f2fs_write_begin 辅助函数
 static int prepare_atomic_write_begin(struct f2fs_sb_info *sbi,
