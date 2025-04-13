@@ -25,9 +25,14 @@ static inline unsigned int addrs_per_page(struct inode *inode,
 				DEF_INLINE_RESERVED_SIZE))
 /*这个inline数据从其计算公式可以看出来 是抢了直接指针的位置
 也就是从inode_info之后开始 删掉末尾的inline_xattr的东西
-再减去为inline保存的大小*/
+再减去为inline保存的大小 DEF_INLINE_RESERVED_SIZE不知道为什么固定为1*/
 /* for inline stuff */
 #define DEF_INLINE_RESERVED_SIZE	1
+#define F2FS_TOTAL_EXTRA_ATTR_SIZE			\
+	(offsetof(struct f2fs_inode, i_extra_end) -	\
+	offsetof(struct f2fs_inode, i_extra_isize))	\
+	/* 200 bytes for inline xattrs by default */
+#define DEFAULT_INLINE_XATTR_ADDRS	50 /*是50个地址 所以是50*4也就是200字节 这意味着实际上用于数据块的直接指针本来就只有前873个*/
 struct f2fs_inode {
 	__le16 i_mode;			/* file mode */         // 2 bytes
 	__u8 i_advise;			/* file hints */         // 1 byte

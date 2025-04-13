@@ -1,3 +1,5 @@
+ **相关函数**
+ * [f2fs_may_inline_data](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/inline.c/f2fs_may_inline_data) <br>
  Absolutely！`f2fs_new_inode` 是 F2FS 文件系统中创建新 inode 的核心函数。它负责分配 inode 编号、初始化 inode 结构、设置各种标志（包括内联数据和扩展属性相关的标志），并处理一些初始化操作。让我们逐行深入解析这个函数，重点关注你关心的内联数据、xattr 和大小设置。
 
 ```c
