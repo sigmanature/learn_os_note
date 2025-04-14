@@ -1,5 +1,5 @@
 **相关函数**
-* []()
+* [folio_fill_tail](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/include/linux/highmem.h/folio_fill_tail.md)
 ```C
 static int iomap_read_inline_data(const struct iomap_iter *iter,
 		struct folio *folio)
@@ -8,7 +8,7 @@ static int iomap_read_inline_data(const struct iomap_iter *iter,
 	/* Calculate the size of inline data to copy.
 	 * It's the file size minus the offset of the inline extent, which should be the remaining part of the file.
 	 */
-	size_t size = i_size_read(iter->inode) - iomap->offset;
+	size_t size = i_size_read(iter->inode) - iomap->offset;/*实际上这个才应该是真正的inline的文件剩余的长度*/
 	/* Calculate the offset within the folio where inline data should be copied.
 	 * offset_in_folio calculates the offset of iomap->offset within the folio's address range.
 	 */
@@ -25,7 +25,7 @@ static int iomap_read_inline_data(const struct iomap_iter *iter,
 	 */
 	if (WARN_ON_ONCE(size > iomap->length))
 		return -EIO; /* Return I/O error if size is inconsistent. */
-
+    /*正常情况下只有iomap.length超过size的份 这是要考虑的边界情况*/
 	/* Check if the offset within the folio is non-zero.
 	 * If offset > 0, it means inline data is not starting from the beginning of the folio.
 	 */
@@ -35,6 +35,7 @@ static int iomap_read_inline_data(const struct iomap_iter *iter,
 		 * potentially related to handling non-page-aligned inline data.
 		 */
 		ifs_alloc(iter->inode, folio, iter->flags); /* 'iter->flags' might control allocation behavior. */
+        /*天杀的 还是gfp flag*/
 
 	/* Fill the folio with inline data and pad the rest with zeroes.
 	 * folio_fill_tail copies 'size' bytes from 'iomap->inline_data' to 'folio' starting at 'offset',
