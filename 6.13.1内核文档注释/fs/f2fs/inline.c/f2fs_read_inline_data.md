@@ -199,62 +199,8 @@ static inline void folio_zero_segment(struct folio *folio,
  * Only a single IOMAP_INLINE extent is allowed at the end of each file.
  * Returns zero for success to complete the read, or the usual negative errno.
  */
-
-
-/**
- * folio_fill_tail - Copy some data to a folio and pad with zeroes.
- * @folio: The destination folio.
- * @offset: The offset into @folio at which to start copying.
- * @from: The data to copy.
- * @len: How many bytes of data to copy.
- *
- * This function is most useful for filesystems which support inline data.
- * When they want to copy data from the inode into the page cache, this
- * function does everything for them.  It supports large folios even on
- * HIGHMEM configurations.
- */
-static inline void folio_fill_tail(struct folio *folio, size_t offset,
-		const char *from, size_t len)
-{
-	char *to;
-
-	/* Map a portion of the folio into kernel address space. */
-	to = kmap_local_folio(folio, offset);
-
-	/* BUG_ON if the copy operation goes beyond the folio size. */
-	VM_BUG_ON(offset + len > folio_size(folio));
-
-	/* Handle HIGHMEM folios in chunks. */
-	if (folio_test_highmem(folio)) {
-		size_t max = PAGE_SIZE - offset_in_page(offset);
-
-		/* Loop to copy in page-sized chunks if needed in HIGHMEM. */
-		while (len > max) {
-			/* Copy 'max' bytes. */
-			memcpy(to, from, max);
-			/* Unmap the current portion. */
-			kunmap_local(to);
-			/* Update remaining length, source pointer, and offset. */
-			len -= max;
-			from += max;
-			offset += max;
-			/* Reset max to PAGE_SIZE for subsequent chunks. */
-			max = PAGE_SIZE;
-			/* Map the next portion of the folio. */
-			to = kmap_local_folio(folio, offset);
-		}
-	}
-
-	/* Copy the remaining data (less than or equal to PAGE_SIZE). */
-	memcpy(to, from, len);
-	/* Zero out the tail of the folio from offset + len to the end.
-	 * folio_zero_tail also flushes the dcache.
-	 */
-	to = folio_zero_tail(folio, offset + len, to + len);
-	/* Unmap the final portion of the folio. */
-	kunmap_local(to);
-}
 ```
+
 
 
 **Comparison of f2fs and iomap inline data reading:**
