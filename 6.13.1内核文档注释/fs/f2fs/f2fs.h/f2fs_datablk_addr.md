@@ -8,7 +8,9 @@ static inline block_t f2fs_data_blkaddr(struct dnode_of_data *dn)
 static inline block_t data_blkaddr(struct inode *inode,
 			struct folio *node_folio, unsigned int offset)
 {
-	return le32_to_cpu(*(get_dnode_addr(inode, node_folio) + offset));/*不论是inode还是直接node,get_dnode_addr返回的都是指向其数据块数组的基地址。看来,用dnode命名是认为inode和直接node都可以被看作是某种意义的直接node啊。(毕竟都有很多的直接指针)
+	return le32_to_cpu(*(get_dnode_addr(inode, node_folio) + offset));/*不论是inode还是直接node,get_dnode_addr返回的都是指向其数据块数组的基地址。
+看来,用dnode命名是认为inode和直接node都可以被看作是某种意义的直接node啊。<br>
+(毕竟都有很多的直接指针)<br>
 	ofs_in_node是指的是我们要查询的数据块在直接node中,从直接node数组角度的偏移。*/
 }
 static inline __le32 *get_dnode_addr(struct inode *inode,
