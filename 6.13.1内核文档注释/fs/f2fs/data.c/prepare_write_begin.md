@@ -142,6 +142,11 @@ static int prepare_write_begin(struct f2fs_sb_info *sbi,
 	/*核心还是要将pos和len转成f2fs_mapblocks 为此我们想想当有inline数据的时候 首先是看这种情况是否有特殊的控制f2fs_mapblocks的flag。
 	然后问题来了。inode中有内联数据但是不一定全不是内联数据吧。这没法保证吧。那我就得对此进行判断。我们应该能分为四种情况:*/
 	/*
-	1.pos+len>MAX_INODE_INLINE_DATA,也就是说写入的位置超过了最大的INLINE数据范围。*/
+	1.pos+len>MAX_INODE_INLINE_DATA,也就是说写入的位置超过了最大的INLINE数据范围。注意在f2fs的上下文语境之中,这个pos指的应该是相对于inline
+data 的起始的位置的偏移量 这个时候设置map block字段为default 我们看一下接下来的逻辑会怎么走。
+注意它和第二个分支条件不是一样的。因为f2fs这里弄得很恶心。它有时候想以MAX_INODE_INLINE_DATA为单位判断inline数据,有时候又以i_size_read为单位判断数据。
+pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是pos>i_size_read却很多时候不会包括前者。*/
+	
+	
 }
 ```
