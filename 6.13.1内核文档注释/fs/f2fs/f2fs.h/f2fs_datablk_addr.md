@@ -12,12 +12,12 @@ static inline block_t data_blkaddr(struct inode *inode,
 看来,用dnode命名是认为inode和直接node都可以被看作是某种意义的直接node啊。<br>
 (毕竟都有很多的直接指针)<br>
 	ofs_in_node是指的是我们要查询的数据块在直接node中,从直接node数组角度的偏移。*/
-}
+}<
 static inline __le32 *get_dnode_addr(struct inode *inode,
 					struct folio *node_folio)
 {
 	return blkaddr_in_node(F2FS_NODE(&node_folio->page)) +
-			get_dnode_base(inode, &node_folio->page);/*先拿到传进来的node自己存的数组基地址。可能是inode,也可能是直接node。如果是node的话,那blkaddr_in_node已经返回了node->dn.addr 已经是正规的基地址了。所以get_node_base就返回了0。如果是inode的话,那就得考虑extra_isize的影响。在i_addr的基地址上还得加上extra_isize。
+			get_dnode_base(inode, &node_folio->page);/*先拿到传进来的node自己存的数组基地址。<br>可能是inode,也可能是直接node。如果是node的话,那blkaddr_in_node已经返回了node->dn.addr 已经是正规的基地址了。<br>所以get_node_base就返回了0。如果是inode的话,那就得考虑extra_isize的影响。在i_addr的基地址上还得加上extra_isize。
 */
 }
 static inline unsigned int get_dnode_base(struct inode *inode,
