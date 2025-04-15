@@ -161,6 +161,13 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 		err = PTR_ERR(ipage);
 		goto unlock_out;
 	}
+	// 使用 inode 及其节点页初始化 dnode_of_data 结构
+	set_new_dnode(&dn, inode, ipage, ipage, 0); // 此处 ipage 既是 nid_page 也是 node_page
+	/*memset(dn, 0, sizeof(*dn));
+	dn->inode = inode;
+	dn->inode_page = ipage;
+	dn->node_page = npage;/*也就是node_page和ipage重合了*/
+	dn->nid = nid;/*被初始化为0*/
 	// --- 处理内联数据 ---
 	if (f2fs_has_inline_data(inode)) {
 		// 写入超出了内联数据容量，需要转换为普通块。
@@ -168,8 +175,9 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 		err = f2fs_convert_inline_page(&dn, folio_page(folio, 0));
 		// 如果转换发生，dn.data_blkaddr 将被设置。
 		// 如果出错或转换成功 (dn.data_blkaddr != NULL_ADDR)，则完成。
-		/*这里说一下整个转换的流程。首先根据dn中存的inode
+		/*这里说一下整个转换的流程。首先为dn预留一个块然后根据dn中存的inode
 		将inode的数据拷贝到传进来的folio之中(会直接调用f2fs_do_read_inline_data),然后将folio标记为脏
+		然后将脏标记清理掉 进入同步回写状态。但是它并没检查当前这个folio是是否处于回写状态就进行了拷贝。
 		*/
 		if (err || dn.data_blkaddr != NULL_ADDR)
 			goto out; // 转到清理/返回路径
