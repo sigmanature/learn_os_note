@@ -146,7 +146,31 @@ static int prepare_write_begin(struct f2fs_sb_info *sbi,
 data 的起始的位置的偏移量 这个时候设置map block字段为default 我们看一下接下来的逻辑会怎么走。
 注意它和第二个分支条件不是一样的。因为f2fs这里弄得很恶心。它有时候想以MAX_INODE_INLINE_DATA为单位判断inline数据,有时候又以i_size_read为单位判断数据。
 pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是pos>i_size_read却很多时候不会包括前者。*/
-	
-	
+	if (f2fs_has_inline_data(inode)) {
+		if (pos + len > MAX_INLINE_DATA(inode))
+			flag = F2FS_GET_BLOCK_DEFAULT;
+		f2fs_map_lock(sbi, flag); // 获取锁
+		locked = true;
+	}
+	restart: // 如果需要，在获取锁后重试的标签
+	/* 检查内联数据 */
+	// 获取包含 inode 直接/间接指针的节点页。
+	ipage = f2fs_get_node_page(sbi, inode->i_ino);
+	if (IS_ERR(ipage)) { // 获取 inode 节点页失败
+		err = PTR_ERR(ipage);
+		goto unlock_out;
+	}
+	// --- 处理内联数据 ---
+	if (f2fs_has_inline_data(inode)) {
+		// 写入超出了内联数据容量，需要转换为普通块。
+		// 此函数分配第一个数据块并将内联数据移动到其中。
+		err = f2fs_convert_inline_page(&dn, folio_page(folio, 0));
+		// 如果转换发生，dn.data_blkaddr 将被设置。
+		// 如果出错或转换成功 (dn.data_blkaddr != NULL_ADDR)，则完成。
+		if (err || dn.data_blkaddr != NULL_ADDR)
+			goto out; // 转到清理/返回路径
+		// 如果由于某种原因转换未发生但没有错误，则继续查找。
+	}
+
 }
 ```
