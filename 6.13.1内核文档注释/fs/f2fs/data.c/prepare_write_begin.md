@@ -167,6 +167,8 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 		err = f2fs_convert_inline_page(&dn, folio_page(folio, 0));
 		// 如果转换发生，dn.data_blkaddr 将被设置。
 		// 如果出错或转换成功 (dn.data_blkaddr != NULL_ADDR)，则完成。
+		/*这里说一下整个转换的流程。首先根据dn中存的inode
+		*/
 		if (err || dn.data_blkaddr != NULL_ADDR)
 			goto out; // 转到清理/返回路径
 		// 如果由于某种原因转换未发生但没有错误，则继续查找。
