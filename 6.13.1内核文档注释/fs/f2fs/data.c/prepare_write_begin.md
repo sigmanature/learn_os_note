@@ -1,6 +1,7 @@
 处理常规（非原子）写入的块查找/预留。
 **相关函数**
 * [f2fs_write_begin](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_write_begin.md)
+* [f2fs_convert_inline_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/inline.c/f2fs_convert_inline_page.md)
 ```c
 // prepare_write_begin: 用于普通文件的 f2fs_write_begin 辅助函数
 static int prepare_write_begin(struct f2fs_sb_info *sbi,
@@ -168,6 +169,7 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 		// 如果转换发生，dn.data_blkaddr 将被设置。
 		// 如果出错或转换成功 (dn.data_blkaddr != NULL_ADDR)，则完成。
 		/*这里说一下整个转换的流程。首先根据dn中存的inode
+		将inode的数据拷贝到传进来的folio之中(会直接调用f2fs_do_read_inline_data),然后将folio标记为脏
 		*/
 		if (err || dn.data_blkaddr != NULL_ADDR)
 			goto out; // 转到清理/返回路径
