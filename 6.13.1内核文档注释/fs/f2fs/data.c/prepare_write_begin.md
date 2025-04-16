@@ -167,7 +167,7 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 	dn->inode = inode;
 	dn->inode_page = ipage;
 	dn->node_page = npage;/*也就是node_page和ipage重合了*/
-	dn->nid = nid;/*被初始化为0*/
+	dn->nid = nid;被初始化为0*/
 	/*基本可以实锤一点dn里存的就是当前的页索引对应的数据块。*/
 	// --- 处理内联数据 ---
 	if (f2fs_has_inline_data(inode)) {
