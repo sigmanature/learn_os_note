@@ -180,6 +180,7 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 		然后将脏标记清理掉 进入同步回写状态。
 		首先我们要理解对于buffer write为什么也要出现读的io。因为folio可能是新分配的。这意味着从内存的角度来说它不知道
 		文件系统的数据是什么,如果用户写入的数据不足整个页,比如写入了开头的50字节,但是page cache中剩余的数据全是0。这个时候如果从			page cache写回到磁盘,会直接导致磁盘数据被覆盖掉。但是对于inline数据,f2fs立刻进行脏页写回的目的是什么还未知。
+		convert这个函数会在等待已经保存了inline数据副本的folio写回之后立刻将原先的inode块truncate掉。
 		*/
 		// 如果转换发生，dn.data_blkaddr 将被设置。
 		// 如果出错或转换成功 (dn.data_blkaddr != NULL_ADDR)，则完成。
@@ -191,7 +192,7 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 	if (!err) { // 如果在查找/预留/转换期间未发生错误
 		/* convert_inline_page 可以导致 node_changed */
 		// 根据 'dn' 中的结果设置输出块地址
-		*blk_addr = dn.data_blkaddr; // 可能是现有地址或 NEW_ADDR
+		*blk_addr = dn.data_blkaddr; // 可能是现有地址 也可以是f2fs_out_place_write分配的新的块地址。
 		// 根据 'dn' 中的结果设置输出 node_changed 标志
 		*node_changed = dn.node_changed;
 	}
