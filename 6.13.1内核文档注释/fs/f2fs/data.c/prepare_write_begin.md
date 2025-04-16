@@ -168,20 +168,32 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 	dn->inode_page = ipage;
 	dn->node_page = npage;/*也就是node_page和ipage重合了*/
 	dn->nid = nid;/*被初始化为0*/
+	/*基本可以实锤一点dn里存的就是当前的页索引对应的数据块。*/
 	// --- 处理内联数据 ---
 	if (f2fs_has_inline_data(inode)) {
-		// 写入超出了内联数据容量，需要转换为普通块。
+		// 写入超出了内联数据容量，需要转换为普通块
 		// 此函数分配第一个数据块并将内联数据移动到其中。
 		err = f2fs_convert_inline_page(&dn, folio_page(folio, 0));
+		
+		/*这里说一下整个转换的流程。首先为dn预留一个块然后根据dn中存的inode。f2fs_reserve_block会将dn的blk_addr设置为NEW_ADDR
+		将inode的数据拷贝到传进来的folio之中(会直接调用f2fs_do_read_inline_data),然后将folio标记为脏
+		然后将脏标记清理掉 进入同步回写状态。
+		首先我们要理解对于buffer write为什么也要出现读的io。因为folio可能是新分配的。这意味着从内存的角度来说它不知道
+		文件系统的数据是什么,如果用户写入的数据不足整个页,比如写入了开头的50字节,但是page cache中剩余的数据全是0。这个时候如果从			page cache写回到磁盘,会直接导致磁盘数据被覆盖掉。但是对于inline数据,f2fs立刻进行脏页写回的目的是什么还未知。
+		*/
 		// 如果转换发生，dn.data_blkaddr 将被设置。
 		// 如果出错或转换成功 (dn.data_blkaddr != NULL_ADDR)，则完成。
-		/*这里说一下整个转换的流程。首先为dn预留一个块然后根据dn中存的inode
-		将inode的数据拷贝到传进来的folio之中(会直接调用f2fs_do_read_inline_data),然后将folio标记为脏
-		然后将脏标记清理掉 进入同步回写状态。但是它并没检查当前这个folio是是否处于回写状态就进行了拷贝。
-		*/
 		if (err || dn.data_blkaddr != NULL_ADDR)
 			goto out; // 转到清理/返回路径
 		// 如果由于某种原因转换未发生但没有错误，则继续查找。
+	}
+	out:
+	if (!err) { // 如果在查找/预留/转换期间未发生错误
+		/* convert_inline_page 可以导致 node_changed */
+		// 根据 'dn' 中的结果设置输出块地址
+		*blk_addr = dn.data_blkaddr; // 可能是现有地址或 NEW_ADDR
+		// 根据 'dn' 中的结果设置输出 node_changed 标志
+		*node_changed = dn.node_changed;
 	}
 
 }
