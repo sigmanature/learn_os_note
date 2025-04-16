@@ -208,7 +208,8 @@ pos+len>MAX_INODE_INLINE_DATA的情况是可以包括pos>i_size_read的 但是po
 static int prepare_write_begin(struct f2fs_sb_info *sbi,
 			struct folio *folio, loff_t pos, unsigned int len,
 			block_t *blk_addr, bool *node_changed)
-struct inode *inode = folio->mapping->host; // 获取 inode
+{
+	struct inode *inode = folio->mapping->host; // 获取 inode
 	pgoff_t index = folio->index; // 页索引
 	struct dnode_of_data dn; // 用于保存数据节点信息（块地址、节点页）的结构
 	struct page *ipage = NULL; // 包含 inode 节点块（元数据）的页
@@ -305,4 +306,5 @@ unlock_out:
 	if (locked) // 如果我们获取了锁
 		f2fs_map_unlock(sbi, flag); // 释放锁
 	return err; // 返回错误码或 0 表示成功
+}
 ```
