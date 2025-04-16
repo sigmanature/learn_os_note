@@ -23,11 +23,9 @@ static int prepare_write_begin(struct f2fs_sb_info *sbi,
 	 * 实际的块分配将在稍后的检查点/回写期间进行。
 	 * 这依赖于由 f2fs_preallocate_blocks 设置的 FI_PREALLOCATED_ALL 标志。
 	 */
-	if (len == PAGE_SIZE && is_inode_flag_set(inode, FI_PREALLOCATED_ALL)) {
-		*blk_addr = NEW_ADDR; // 标记它在逻辑上是新的/预分配的
-		*node_changed = true; // 假设元数据会改变
-		return 0; // 优化成功
-	}
+	if (len == PAGE_SIZE && is_inode_flag_set(inode, FI_PREALLOCATED_ALL)) 
+		return 0; 
+	
 
 
 	/* f2fs_lock_op 避免了写入 CP 和 convert_inline_page 之间的竞争 */
