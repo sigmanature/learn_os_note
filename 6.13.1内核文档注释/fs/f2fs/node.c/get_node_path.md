@@ -1,3 +1,5 @@
+**相关函数**
+[get_dnode_of_data](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/f2fs_get_dnode_of_data.md)
   好的，`get_node_path` 函数在 F2FS 中确实是一个 **非常核心且关键的函数**。  它负责 **计算逻辑块号在 Inode 的 Dnode 树中的 *节点路径***，这是 `f2fs_get_dnode_of_data` 函数能够遍历 Dnode 树并找到对应 Dnode 的 *基础*。
 
 让我们来逐步详细地解析 `get_node_path` 函数：

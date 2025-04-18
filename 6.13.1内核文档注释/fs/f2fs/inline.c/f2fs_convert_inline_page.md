@@ -38,7 +38,8 @@ int f2fs_convert_inline_page(struct dnode_of_data *dn, struct page *page)
     * f2fs_reserve_block will handle the block allocation and update dnode accordingly.
     * index 0 is passed, indicating the first block of data (offset 0 in file).
     */
-   err = f2fs_reserve_block(dn, 0);/*传进去的是个dn指针
+   err = f2fs_reserve_block(dn, 0);/*传进去的是个dn指针。f2fs_reserve_block 第二个参数为pgoff 这里固定传入0。那意味着
+   虽然dn的inode有inline数据 但是也不会走f2fs_get_dnode_of_data中的报错分支了。
    所以说应该会修改dn的blk_addr为NEW_ADDR*/
    if (err)
    	return err; /* Return error if block reservation fails */

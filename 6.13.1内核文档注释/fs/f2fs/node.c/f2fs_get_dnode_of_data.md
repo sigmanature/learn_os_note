@@ -1,3 +1,5 @@
+**相关函数**
+* [get_node_path 遍历多级目录树,以指定的页面索引为key返回信息](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/node.c/get_node_path.md)
  当然，我很乐意为您提供 `f2fs_get_dnode_of_data` 函数代码逐步解析的完整详细中文翻译。以下是重新翻译的版本：
 
 # `f2fs_get_dnode_of_data(struct dnode_of_data *dn, pgoff_t index, int mode)` 函数详解 (中文详细翻译)**
