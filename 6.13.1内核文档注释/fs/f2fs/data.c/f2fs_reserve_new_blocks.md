@@ -29,7 +29,8 @@ int f2fs_reserve_new_blocks(struct dnode_of_data *dn, blkcnt_t count)
 	}
 
 	if (set_page_dirty(dn->node_page))
-		dn->node_changed = true;/*想想什么时候page会被设置为dirty啊?*/
+		dn->node_changed = true;/*想想什么时候page会被设置为dirty啊? 能想到的一个当然是gc。另外f2fs_outplace_write
+        中也会进行这样的检查*/
 	return 0;
 }
 ```
