@@ -24,6 +24,16 @@ int f2fs_reserve_new_blocks(struct dnode_of_data *dn, blkcnt_t count)
 
 		if (blkaddr == NULL_ADDR) {
 			__set_data_blkaddr(dn, NEW_ADDR);
+			/*
+			static void __set_data_blkaddr(struct dnode_of_data *dn, block_t blkaddr)
+			{
+			__le32 *addr = get_dnode_addr(dn->inode, dn->node_page);
+
+			dn->data_blkaddr = blkaddr;
+			addr[dn->ofs_in_node] = cpu_to_le32(dn->data_blkaddr);
+			}
+
+			*/
 			count--;
 		}
 	}
