@@ -134,28 +134,7 @@ clear_out:
 * This function reserves a new data block for the given dnode.
 * It gets a dnode for the given index and reserves a new block if needed.
 */
-int f2fs_reserve_block(struct dnode_of_data *dn, pgoff_t index)
-{
-   bool need_put = dn->inode_page ? false : true; /* Determine if we need to put inode_page later */
-   int err;
 
-   /* Get dnode of data for the given index.
-    * f2fs_get_dnode_of_data retrieves or allocates a dnode for the specified page index.
-    * ALLOC_NODE flag indicates that a new node page might be allocated if needed.
-    */
-   err = f2fs_get_dnode_of_data(dn, index, ALLOC_NODE);
-   if (err)
-   	return err; /* Return error if getting dnode fails */
-
-   /* Check if the data block address is NULL_ADDR, meaning no block is currently assigned.
-    * If it's NULL_ADDR, we need to reserve a new block.
-    */
-   if (dn->data_blkaddr == NULL_ADDR)
-   	err = f2fs_reserve_new_block(dn); /* Reserve a new block */
-   if (err || need_put)
-   	f2fs_put_dnode(dn); /* Release dnode if error or if inode_page was initially not held */
-   return err; /* Return reservation result */
-}
 
 /**
 * f2fs_reserve_new_block - Reserve one new data block
