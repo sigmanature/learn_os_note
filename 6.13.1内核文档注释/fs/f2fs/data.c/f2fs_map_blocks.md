@@ -486,3 +486,140 @@ out:
 *   **`out:` 标签和返回值:**  `trace_f2fs_map_blocks(inode, map, flag, err); return err;`:  **记录 `f2fs_map_blocks` 函数的 tracepoint 信息，并返回错误码 `err`。**
 
 *   **总结 `f2fs_map_blocks`:**  `f2fs_map_blocks` 函数实现了 **F2FS 块映射的核心逻辑**，包括 **Extent Cache 快速路径、Dnode 树查找、物理块地址获取、Hole 处理、Inplace/Outplace Update 选择、BIO 合并优化、多设备 Direct IO 支持、Extent Cache 更新和错误处理** 等复杂功能。  **`f2fs_map_blocks` 函数通过 *两层循环* (Dnode 循环和块循环) 遍历逻辑块范围，并根据 Inode 的元数据信息 (Dnode 树, Extent Cache) 将逻辑块号转换为物理块地址，最终将块映射信息存储在 `f2fs_map_blocks` 结构体中。**  **`f2fs_map_blocks` 函数是 F2FS 数据访问路径上的关键函数，体现了 F2FS 在地址映射、性能优化和功能丰富性方面的设计。**
+  
+我们可以考虑通过代入初值将f2fs_map_blocks的逻辑简化:
+1.这是在`f2fs_preallocate_blocks`函数中的调用case。因为预分配逻辑一定会将
+传入的flag设置为F2FS_GET_BLOCK_PRE_AIO。所以我们就只保留这条分支上的逻辑。
+```c
+int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map, int flag)
+{
+	unsigned int maxblocks = map->m_len;
+	struct dnode_of_data dn;
+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+	int mode = map->m_may_create ? ALLOC_NODE : LOOKUP_NODE;/*进行读操作的时候肯定是后者*/
+	pgoff_t pgofs, end_offset, end;
+	int err = 0, ofs = 1;
+	unsigned int ofs_in_node, last_ofs_in_node;
+	blkcnt_t prealloc;
+	block_t blkaddr;
+	unsigned int start_pgofs;
+	int bidx = 0;
+	bool is_hole;
+
+	if (!maxblocks)
+		return 0;
+
+	if (!map->m_may_create && f2fs_map_blocks_cached(inode, map, flag))
+		goto out;
+
+	map->m_bdev = inode->i_sb->s_bdev;
+	map->m_multidev_dio =
+		f2fs_allow_multi_device_dio(F2FS_I_SB(inode), flag);
+
+	map->m_len = 0;/*标志实际映射的块数量。这个变量其实类似xfs_bmbt_irec中的block数量*/
+	map->m_flags = 0;
+
+	/* it only supports block size == page size */
+	pgofs =	(pgoff_t)map->m_lblk; /*起始的逻辑索引
+	可以被诸如从f2fs_read_single_page这样的函数传进来 也可能被f2fs_preallocate_blocks这样的函数传进来*/
+	next_dnode:
+	if (map->m_may_create)
+		f2fs_map_lock(sbi, flag);
+
+	/* When reading holes, we need its node page */
+	set_new_dnode(&dn, inode, NULL, NULL, 0);/*先拿到node页*/
+	/*f2fs_get_dnode_of_data内部是会进行多级间接指针的树形查找
+	但是呢 最终返回给f2fs_map_blocks 也就是这边看到的一直只有直接node的信息。*/
+	err = f2fs_get_dnode_of_data(&dn, pgofs, mode);
+	if (err) {
+		if (flag == F2FS_GET_BLOCK_BMAP)
+			map->m_pblk = 0;
+		if (err == -ENOENT)
+			err = f2fs_map_no_dnode(inode, map, &dn, pgofs);
+		goto unlock_out;
+	}
+
+	start_pgofs = pgofs;/*start_pgofs是循环的初始计数器*/
+	prealloc = 0;
+	last_ofs_in_node = ofs_in_node = dn.ofs_in_node;
+	end_offset = ADDRS_PER_PAGE(dn.node_page, inode);
+	/*循环开始*/
+next_block:
+	blkaddr = f2fs_data_blkaddr(&dn);/*然后拿到数据块地址
+	因为我们详细分析过f2fs_data_blkaddr了,我们现在很笃定dn自己存的那个block_t	data_blkaddr就是node块自己的物理块地址。而我们要根据逻辑索引找的那个数据块地址必须根据f2fs_data_blkaddr计算出来*/
+	is_hole = !__is_valid_data_blkaddr(blkaddr);/*空洞这里记录的是数据块有效的取反*/
+	/*文件污染判断逻辑*/
+	/* use out-place-update for direct IO under LFS mode */
+	/*direct io 新地更新逻辑开始*/
+	if (map->m_may_create && (is_hole ||
+		(flag == F2FS_GET_BLOCK_DIO && f2fs_lfs_mode(sbi) &&
+		!f2fs_is_pinned_file(inode)))) {
+		if (unlikely(f2fs_cp_error(sbi))) {
+			err = -EIO;
+			goto sync_out;
+		}
+
+		switch (flag) {
+		case F2FS_GET_BLOCK_PRE_AIO:
+			if (blkaddr == NULL_ADDR) {
+				prealloc++;
+				last_ofs_in_node = dn.ofs_in_node;
+			}
+			break;
+		}
+
+		blkaddr = dn.data_blkaddr;
+		if (is_hole)
+		{
+			map->m_flags |= F2FS_MAP_NEW;
+		}
+		/*异地更新逻辑结束*/
+		if (flag == F2FS_GET_BLOCK_PRE_AIO)
+			goto skip;/*实际上就是continue*/
+skip:
+	dn.ofs_in_node++;
+	pgofs++;
+
+	/* preallocate blocks in batch for one dnode page */
+	/*预分配逻辑 很大概率对我们处理回写逻辑的时候很有帮助*/
+	if (flag == F2FS_GET_BLOCK_PRE_AIO &&
+			(pgofs == end || dn.ofs_in_node == end_offset)) {
+
+		dn.ofs_in_node = ofs_in_node;
+		err = f2fs_reserve_new_blocks(&dn, prealloc);
+		if (err)
+			goto sync_out;
+
+		map->m_len += dn.ofs_in_node - ofs_in_node;
+		if (prealloc && dn.ofs_in_node != last_ofs_in_node + 1) {
+			err = -ENOSPC;
+			goto sync_out;
+		}
+		dn.ofs_in_node = end_offset;
+		}
+	}
+	if (pgofs >= end)
+		goto sync_out;
+	else if (dn.ofs_in_node < end_offset)
+		goto next_block;/*循环判断和跳转*/
+	/*后处理逻辑开始*/
+	f2fs_put_dnode(&dn);
+
+	if (map->m_may_create) {
+		f2fs_map_unlock(sbi, flag);
+		f2fs_balance_fs(sbi, dn.node_changed);
+	}
+	goto next_dnode;
+
+sync_out:
+	f2fs_put_dnode(&dn);
+unlock_out:
+	if (map->m_may_create) {
+		f2fs_map_unlock(sbi, flag);
+		f2fs_balance_fs(sbi, dn.node_changed);
+	}
+out:
+	trace_f2fs_map_blocks(inode, map, flag, err);
+	return err;
+	}
+}
