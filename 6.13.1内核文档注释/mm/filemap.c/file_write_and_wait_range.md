@@ -1,3 +1,10 @@
+**函数关系调用图**
+```mermaid
+graph TD
+subgraph file_write_and_wait_range
+A{如果mapping中有记录的脏页}--是-->B["__filemap_fdatawrite_range<br>(mapping, lstart, lend,<br>WB_SYNC_ALL)"]-->C{如果错误不是EIO}--是-->D["__filemap_fdatawait_range<br>(mapping, lstart, lend)"]
+end 
+```
 ```c
 int file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)
 {
@@ -8,8 +15,7 @@ int file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)
 		return 0;
 
 	if (mapping_needs_writeback(mapping)) {
-		err = __filemap_fdatawrite_range(mapping, lstart, lend,
-						 WB_SYNC_ALL);
+		err = __filemap_fdatawrite_range(mapping, lstart, lend,WB_SYNC_ALL);
 		/* See comment of filemap_write_and_wait() */
 		if (err != -EIO)
 			__filemap_fdatawait_range(mapping, lstart, lend);

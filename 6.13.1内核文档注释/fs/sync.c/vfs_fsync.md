@@ -47,11 +47,11 @@ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 
 **d) `f2fs_do_sync_file(struct file *file, loff_t start, loff_t end, int datasync, bool atomic)`**
 
-[f2fs_do_sync_file](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_sync_file.md)
+[f2fs_do_sync_file](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_do_sync_file.md)
 
 **e) `file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)`**
 
-[file_write_and_wait_range](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/f2fs_sync_file.md)
+[file_write_and_wait_range](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/file_write_and_wait_range.md)
 
 **f) `__filemap_fdatawrite_range(struct address_space *mapping, loff_t start, loff_t end, int sync_mode)`**
 

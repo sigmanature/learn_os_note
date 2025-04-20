@@ -4,8 +4,9 @@
 graph TD
 A[vfs_sync]-->B["vfs_sync_range<br>(file, 0, LLONG_MAX, <br>datasync)"]-->a
 subgraph a[vfs_sync_range]
-1{如果不是数据同步模式}--是-->2[mark_inode_dirty_sync]-->3["f_op->fsync"]-->4[f2fs_sync_file]-->5[f2fs_do_sync_file]
+1{如果不是数据同步模式}--是-->2[mark_inode_dirty_sync]-->3["f_op->fsync"]-->4[f2fs_sync_file]-->5["f2fs_do_sync_file(start,end)"]-->6["file_write_and_wait_range<br>(start,end)"]
 1-->否-->3
 end
-
+click 5 https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_do_sync_file.md
+click 6 https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/filemap.c/file_write_and_wait_range.md
 ```
