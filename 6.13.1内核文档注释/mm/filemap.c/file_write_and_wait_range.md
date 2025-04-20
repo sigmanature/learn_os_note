@@ -1,9 +1,19 @@
 **函数关系调用图**
 ```mermaid
 graph TD
-subgraph file_write_and_wait_range
-A{如果mapping中有记录的脏页}--是-->B["__filemap_fdatawrite_range<br>(mapping, lstart, lend,<br>WB_SYNC_ALL)"]-->C{如果错误不是EIO}--是-->D["__filemap_fdatawait_range<br>(mapping, lstart, lend)"]
+E[f2fs_do_sync_file]-->b
+subgraph b[file_write_and_wait_range]
+A{如果mapping中有记录的脏页}--是-->B["__filemap_fdatawrite_range<br>(mapping, lstart, lend,<br>WB_SYNC_ALL)"]-->C{如果错误不是EIO}--是-->D["__filemap_fdatawait_range<br>(mapping, lstart, lend)"]-->a
 end 
+subgraph a[__filemap_fdatawrite_range]
+1["初始化wbc,<br>同步模式为传入的模式<br>,<br>
+.range_start = start,<br>
+.range_end = end,"]-->2["filemap_fdatawrite_wbc<br>(mapping, &wbc)"]-->c
+end
+subgraph c[filemap_fdatawrite_wbc]
+3[wbc_attach_fdatawrite_inode]-->4[do_writepages]-->5["循环调用a_ops->writepages"]
+end
+click E https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_do_sync_file.md
 ```
 ```c
 int file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)
