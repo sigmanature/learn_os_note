@@ -11,9 +11,10 @@ subgraph a[__filemap_fdatawrite_range]
 .range_end = end,"]-->2["filemap_fdatawrite_wbc<br>(mapping, &wbc)"]-->c
 end
 subgraph c[filemap_fdatawrite_wbc]
-3[wbc_attach_fdatawrite_inode]-->4[do_writepages]-->5["循环调用a_ops->writepages"]
+3[wbc_attach_fdatawrite_inode]-->4[do_writepages]-->5["循环调用a_ops->writepages"]-->6[f2fs_write_data_pages]
 end
 click E https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/file.c/f2fs_do_sync_file.md
+click 6 https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_write_data_pages.md
 ```
 ```c
 int file_write_and_wait_range(struct file *file, loff_t lstart, loff_t lend)
