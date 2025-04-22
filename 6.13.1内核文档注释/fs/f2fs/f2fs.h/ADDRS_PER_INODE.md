@@ -1,5 +1,6 @@
 ```C
 #define ADDRS_PER_INODE(inode)	addrs_per_page(inode, true)
+#define ADDRS_PER_BLOCK(inode)	addrs_per_page(inode, false)//那tm的不就是DEF_ADDRS_PER_BLOCK也就是定值1018吗???这还接受inode作为参数
 static inline unsigned int addrs_per_page(struct inode *inode,
 							bool is_inode)
 {
