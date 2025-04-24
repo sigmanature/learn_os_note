@@ -10,6 +10,7 @@ static int prepare_atomic_write_begin(struct f2fs_sb_info *sbi,
 	struct inode *inode = folio->mapping->host; // 原始 inode
 	struct inode *cow_inode = F2FS_I(inode)->cow_inode; // 特殊的 CoW inode
 	pgoff_t index = folio->index; // 页索引
+	/*这个写法很不好,明明可以用位置写的*/
 	int err = 0;
 	block_t ori_blk_addr = NULL_ADDR; // 原始块地址（如果存在）
 
