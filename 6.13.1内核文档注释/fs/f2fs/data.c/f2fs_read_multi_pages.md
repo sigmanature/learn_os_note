@@ -1,13 +1,13 @@
 **相关函数和数据结构**
 * [decompress_io_ctx](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/f2fs.h/decompress_io_ctx.md)
-* [f2fs_mpage_read_pages](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_mpage_read_pages.md)
+* [f2fs_mpage_readpages](https://github.com/sigmanature/learn_os_note/tree/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_mpage_readpages.md)
 ```C
 // #ifdef CONFIG_F2FS_FS_COMPRESSION // Only if compression is enabled
 
 // Function to read multiple pages belonging to a single compressed cluster
 // It finds the compressed blocks, allocates a decompression context (dic),
 // issues reads for the compressed blocks, and sets up decompression upon completion.
-//压缩上下文总是在栈上分配
+//压缩上下文总是在栈上分配。就是在f2fs_mpage_readp
 int f2fs_read_multi_pages(struct compress_ctx *cc, struct bio **bio_ret,
 				unsigned nr_pages, sector_t *last_block_in_bio,
 				struct readahead_control *rac, bool for_write)
