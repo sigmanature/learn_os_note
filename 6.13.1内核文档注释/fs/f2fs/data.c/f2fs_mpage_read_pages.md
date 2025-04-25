@@ -1,5 +1,6 @@
 **相关函数**
 *   [read_pages](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/read_pages.md)
+*	[f2fs_read_multipages]()
 ** `f2fs_mpage_readpages`**
 
  当然！这是我上次回复的完整中文翻译，一字不差：
@@ -135,12 +136,15 @@ static int f2fs_mpage_readpages(struct inode *inode,
 #endif
 	// ... (与之前相同的 nr_pages 循环) ...
 #ifdef CONFIG_F2FS_FS_COMPRESSION
-		index = folio_index(folio); // 获取 folio 索引
+		index = folio_index(folio); // 获取 folio 索引 注意这个是从内存中拿到的folio的索引
 
 		if (!f2fs_compressed_file(inode)) // 检查文件是否已压缩
 			goto read_single_page; // 如果未压缩，则作为单页读取
 
-		/* 存在剩余的压缩页面，提交它们 */
+		/* 这个判断虽然在前但是一般是后触发的
+		一旦新的page index终于无法和前面的簇合并
+		那之前初始化好的ctx如果存在剩余的压缩页面，提交它们
+		 */
 		if (!f2fs_cluster_can_merge_page(&cc, index)) { // 无法合并到当前簇？
 			ret = f2fs_read_multi_pages(&cc, &bio, // 从压缩上下文中读取多页
 						max_nr_pages,
@@ -165,11 +169,14 @@ static int f2fs_mpage_readpages(struct inode *inode,
 
 			nc_cluster_idx = NULL_CLUSTER; // 重置非压缩簇索引
 		}
-		ret = f2fs_init_compress_ctx(&cc); // 为新簇初始化压缩上下文
+		ret = f2fs_init_compress_ctx(&cc); // 为新簇初始化压缩上下文 具体来来说是为cc的rpages指针分配内存
+										   // 如果已经分配过了就不再分配了。
 		if (ret)
 			goto set_error_page; // 错误处理
 
-		f2fs_compress_ctx_add_page(&cc, folio); // 将页面添加到压缩上下文
+		f2fs_compress_ctx_add_page(&cc, folio); // 将页面添加到压缩上下文。同属于一个cluster的page会全部因为
+												// f2fs_cluster_can_merge_page为true 直接跳过read_multipages
+												// 转到add_page直接添加。
 
 		goto next_page; // 转到下一个页面处理
 read_single_page: // 用于读取单页的标签（非压缩路径）

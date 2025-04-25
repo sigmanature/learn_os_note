@@ -44,6 +44,31 @@ static pgoff_t start_idx_of_cluster(struct compress_ctx *cc)
 	// Left-shifting by log_cluster_size is equivalent to multiplying by cluster_size
 	return cc->cluster_idx << cc->log_cluster_size;
 }
+static void *page_array_alloc(struct inode *inode, int nr)
+{
+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+	unsigned int size = sizeof(struct page *) * nr;
+
+	if (likely(size <= sbi->page_array_slab_size))
+		return f2fs_kmem_cache_alloc(sbi->page_array_slab,
+					GFP_F2FS_ZERO, false, F2FS_I_SB(inode));
+	return f2fs_kzalloc(sbi, size, GFP_NOFS);
+}
+
+static void page_array_free(struct inode *inode, void *pages, int nr)
+{
+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+	unsigned int size = sizeof(struct page *) * nr;
+
+	if (!pages)
+		return;
+
+	if (likely(size <= sbi->page_array_slab_size))
+		kmem_cache_free(sbi->page_array_slab, pages);
+	else
+		kfree(pages);
+}
+
 // Add a page (folio) to the compression context
 void f2fs_compress_ctx_add_page(struct compress_ctx *cc, struct folio *folio)
 {

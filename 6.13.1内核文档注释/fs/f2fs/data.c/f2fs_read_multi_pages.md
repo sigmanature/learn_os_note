@@ -7,6 +7,7 @@
 // Function to read multiple pages belonging to a single compressed cluster
 // It finds the compressed blocks, allocates a decompression context (dic),
 // issues reads for the compressed blocks, and sets up decompression upon completion.
+//压缩上下文总是在栈上分配
 int f2fs_read_multi_pages(struct compress_ctx *cc, struct bio **bio_ret,
 				unsigned nr_pages, sector_t *last_block_in_bio,
 				struct readahead_control *rac, bool for_write)
@@ -67,6 +68,13 @@ int f2fs_read_multi_pages(struct compress_ctx *cc, struct bio **bio_ret,
 		cc->rpages[i] = NULL; // Remove page from context
 		cc->nr_rpages--; // Decrement count of pages needed
 	} /*整个这个循环干的事情就是遍历在当前cluster中的每个page 只要它的index超出了文件末尾 就对它干以下几件事:
+        第一:zero
+        第二:不是uptodate的标记为uptodate
+        第三:解锁(因为这个函数一般是被f2fs_mpage_readpages调用,处于预读之下的锁保护 所以解锁)
+        第四:当前的cc中原始page数组中的槽位清零了
+        第五:cc中原始page的数量减去1
+        最后剩下的就是那些还在文件范围内的原始数据pages
+        问题是如果说是连续的index的话,那肯定是在大阶folio下可以优化的。
     */
 
 	/* we are done since all pages are beyond EOF */
@@ -95,13 +103,16 @@ skip_reading_dnode: // Label to jump to if using extent cache or after reading d
 	// The actual block addresses start from the *second* slot in the dnode entry
 	// or from ei.blk in the extent cache.
 	cc->nr_cpages = 0; // Initialize count of compressed blocks
-	for (i = 1; i < cc->cluster_size; i++) { // Check subsequent slots/blocks
+	for (i = 1; i < cc->cluster_size; i++) { /* Check subsequent slots/blocks 注意到i从1开始
+        因为啊i=0这个对应的dn.ofs_in_node 也就是我们根据刚刚的start_bidx查找到的那个块啊
+        一定被预留为了COMPRESS_ADDR*/
 		block_t blkaddr; // Physical block address of a compressed chunk
 
 		// Get block address either from dnode (offset +i) or extent cache (ei.blk + i - 1)
 		blkaddr = from_dnode ? data_blkaddr(dn.inode, dn.node_folio,
 					dn.ofs_in_node + i) :
-					ei.blk + i - 1; // Note: ei.blk is the first *data* block addr
+					ei.blk + i - 1; /* Note: ei.blk is the first *data* block addr 根据extent查到的
+                    竟然直接对应的就是第一个数据块地址了?*/
 
 		// Stop if we encounter an invalid address (marks end of compressed blocks)
 		if (!__is_valid_data_blkaddr(blkaddr))
@@ -126,8 +137,9 @@ skip_reading_dnode: // Label to jump to if using extent cache or after reading d
 		goto out_put_dnode; // Jump to cleanup
 	}
 
-	// Allocate the Decompression I/O Context (dic)
+	// Allocate the Decompression I/O Context 
 	dic = f2fs_alloc_dic(cc);
+    /*分配解压缩上下文的时候,会将压缩上下文的所有原始数据page拷贝过来*/
 	if (IS_ERR(dic)) { // Check for allocation errors
 		ret = PTR_ERR(dic);
 		goto out_put_dnode; // Jump to cleanup
@@ -139,7 +151,6 @@ skip_reading_dnode: // Label to jump to if using extent cache or after reading d
 		struct folio *folio = page_folio(dic->cpages[i]);
 		block_t blkaddr; // Physical block address
 		struct bio_post_read_ctx *ctx; // Context for bio completion handler
-
 		// Get the physical block address for the i-th compressed block
 		// Note the offset: + i + 1 for dnode, + i for extent cache
 		blkaddr = from_dnode ? data_blkaddr(dn.inode, dn.node_folio,
