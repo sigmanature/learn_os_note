@@ -7,7 +7,9 @@
 // Function to read multiple pages belonging to a single compressed cluster
 // It finds the compressed blocks, allocates a decompression context (dic),
 // issues reads for the compressed blocks, and sets up decompression upon completion.
-//压缩上下文总是在栈上分配。就是在f2fs_mpage_readp
+//压缩上下文总是在栈上分配。就是在f2fs_mpage_readpages中被分配的。
+//这个函数很可能在每次一个cluster中的page被填满了才调用一次。注意这些page,也统统来自page cache。
+//并且它们的索引对应的统统都是逻辑索引。
 int f2fs_read_multi_pages(struct compress_ctx *cc, struct bio **bio_ret,
 				unsigned nr_pages, sector_t *last_block_in_bio,
 				struct readahead_control *rac, bool for_write)
@@ -17,7 +19,7 @@ int f2fs_read_multi_pages(struct compress_ctx *cc, struct bio **bio_ret,
 	struct f2fs_sb_info *sbi = F2FS_I_SB(inode); // Get F2FS superblock info
 	struct bio *bio = *bio_ret; // Get the current bio pointer
 	// Calculate the starting page index of the cluster
-	unsigned int start_idx = cc->cluster_idx << cc->log_cluster_size;
+	unsigned int start_idx = cc->cluster_idx << cc->log_cluster_size;//实锤了cluster_idx必然是文件的逻辑索引。
 	sector_t last_block_in_file; // Last valid block index within the file size
 	const unsigned int blocksize = F2FS_BLKSIZE; // Filesystem block size (usually 4KB)
 	struct decompress_io_ctx *dic = NULL; // Decompression I/O context pointer
@@ -91,7 +93,7 @@ int f2fs_read_multi_pages(struct compress_ctx *cc, struct bio **bio_ret,
 
 	// Prepare to read the direct node containing the block address for start_idx
 	set_new_dnode(&dn, inode, NULL, NULL, 0);
-	ret = f2fs_get_dnode_of_data(&dn, start_idx, LOOKUP_NODE);
+	ret = f2fs_get_dnode_of_data(&dn, start_idx, LOOKUP_NODE);//这个地方是根据簇的起始索引去找到其对应的COMPRESS_ADDR的
 	if (ret) // If error getting dnode (e.g., file hole)
 		goto out; // Jump to exit
 
@@ -102,6 +104,8 @@ skip_reading_dnode: // Label to jump to if using extent cache or after reading d
 	// Determine the number of compressed pages (nr_cpages)
 	// The actual block addresses start from the *second* slot in the dnode entry
 	// or from ei.blk in the extent cache.
+	// 这一步干的事就是从起始的cluster索引一直到cluster里所有的page找到对应的数据块。
+	// 最终为压缩上下文保存所有找到的数据块。
 	cc->nr_cpages = 0; // Initialize count of compressed blocks
 	for (i = 1; i < cc->cluster_size; i++) { /* Check subsequent slots/blocks 注意到i从1开始
         因为啊i=0这个对应的dn.ofs_in_node 也就是我们根据刚刚的start_bidx查找到的那个块啊
