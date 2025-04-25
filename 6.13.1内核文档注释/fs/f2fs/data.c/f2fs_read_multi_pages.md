@@ -162,7 +162,7 @@ skip_reading_dnode: // Label to jump to if using extent cache or after reading d
 					ei.blk + i;
 
 		// Ensure any previous writes to this block are completed
-		f2fs_wait_on_block_writeback(inode, blkaddr);
+		f2fs_wait_on_block_writeback(inode, blkaddr);/*这些被压缩的数据块全部视作元数据,读到的是compress_mapping之中*/
 
 		// Check if this compressed block is already cached (optimization)
 		if (f2fs_load_compressed_folio(sbi, folio, blkaddr)) {
