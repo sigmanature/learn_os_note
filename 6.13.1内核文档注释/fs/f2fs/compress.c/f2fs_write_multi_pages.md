@@ -33,8 +33,7 @@ readd:
 						&submitted, wbc, io_type);
 					if (!ret)
 						need_readd = true;
-					goto result;/*bio应该在write_multi_pages里被提交了
-                    所以正常的ipu和outplace write路径应该是不会走的*/
+					goto result;/**/
 				}
 				if (f2fs_all_cluster_page_ready(&cc,
 					pages, i, nr_pages, true))
