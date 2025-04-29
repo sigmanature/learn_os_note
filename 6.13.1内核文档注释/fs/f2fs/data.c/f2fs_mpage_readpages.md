@@ -150,7 +150,9 @@ static int f2fs_mpage_readpages(struct inode *inode,
 						max_nr_pages,
 						&last_block_in_bio,
 						rac, false);
-			f2fs_destroy_compress_ctx(&cc, false); // 销毁压缩上下文
+			f2fs_destroy_compress_ctx(&cc, false); 
+			/* 销毁压缩上下文 并且这个上下文不会再次被复用。所以这行函数调用结束之后
+			cc.cluster_idx一定变为null_cluster*/
 			if (ret)
 				goto set_error_page; // 错误处理
 		}
@@ -293,3 +295,4 @@ next_page: // 用于下一个页面处理的标签（在压缩路径中使用）
 
 如果您想更深入地了解函数的任何特定部分或压缩逻辑，请告诉我！
 
+我们现在尝试改造一下`f2fs_mpage_readpages`函数使得其能处理任意阶folio:

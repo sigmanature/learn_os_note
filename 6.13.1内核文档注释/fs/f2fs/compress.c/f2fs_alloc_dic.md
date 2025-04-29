@@ -58,8 +58,10 @@ struct decompress_io_ctx *f2fs_alloc_dic(struct compress_ctx *cc)
 		// Set metadata on the page linking it back to the dic (used in completion handlers)
         /*这个page/folio的private会指向其解压缩上下文*/
 		f2fs_set_compressed_page(page, cc->inode,
-					start_idx + i + 1, dic); 
-                    /* 最大的重点是start_idx作为簇的起始索引和文件位置有没有关系*/
+					start_idx + i + 1, dic); /*
+                    很奇怪 为什么compressed page的逻辑索引要多一个
+                    dic 成为了这些compress page的私有数据
+                    */
 		dic->cpages[i] = page; // Store the allocated page pointer
 	}
 

@@ -81,7 +81,8 @@ static int f2fs_write_cache_pages(struct address_space *mapping,
 		pages = f2fs_kzalloc(
 			sbi, sizeof(struct page *) << cc.log_cluster_size,
 			GFP_NOFS | __GFP_NOFAIL);
-		max_pages = 1 << cc.log_cluster_size;
+		max_pages = 1 << cc.log_cluster_size;/*压缩上下文的情况下,如果一个簇的大小比max_pages大,
+		调整这个数目到一个簇的大小上去。*/
 	}
 #endif
 
@@ -217,7 +218,8 @@ readd:
 					goto lock_folio;
 
 				ret2 = f2fs_prepare_compress_overwrite(
-					inode, &pagep, folio->index, &fsdata);
+					inode, &pagep, folio->index, &fsdata);/*在脏页回写的时候 也要把当前一整个簇的page全部读到
+					page cache里头*/
 				if (ret2 < 0) {
 					ret = ret2;
 					done = 1;

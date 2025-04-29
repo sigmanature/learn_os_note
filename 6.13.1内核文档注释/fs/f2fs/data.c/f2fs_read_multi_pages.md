@@ -188,6 +188,9 @@ submit_and_realloc: // Label for submitting existing bio and starting a new one
 			bio = f2fs_grab_read_bio(inode, blkaddr, nr_pages,
 					f2fs_ra_op_flags(rac),
 					folio->index, for_write);
+                    /*提一嘴f2fs_grab_read_bio分配bio的方式。你可以注意到这初次的分配直接分配了
+                    整个所有bio大小*/
+                    /**/
 			if (IS_ERR(bio)) { // Handle bio allocation error
 				ret = PTR_ERR(bio);
 				// Signal error to decompression context and clean it up
