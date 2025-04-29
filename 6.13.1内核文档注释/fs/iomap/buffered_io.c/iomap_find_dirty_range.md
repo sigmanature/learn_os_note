@@ -37,3 +37,13 @@ static unsigned ifs_find_dirty_range(struct folio *folio,
 }
 
 ```
+类比这个函数,我们也能轻易地写出`f2fs_iomap_find_dirty_range`呢:
+```C
+static unsigned iomap_find_dirty_range(struct folio *folio, u64 *range_start,
+		u64 range_end)
+{
+ if(!folio->mapping)
+ 	return 0;
+ struct inode* inode=folio->mapping->host;
+}
+```
