@@ -132,6 +132,7 @@ retry:
 again:
 		nr_folios = filemap_get_folios_tag(mapping, &index, end, tag,
 						   &fbatch);
+		/*注意这个函数并不上锁*/
 		if (nr_folios == 0) {
 			if (nr_pages)
 				goto write;
