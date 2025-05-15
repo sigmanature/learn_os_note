@@ -1,4 +1,4 @@
-  你的分析非常到位，你已经开始深入到数据块写回的关键路径，并敏锐地指出了数据块处理的复杂性，以及 `f2fs_do_write_data_page` 函数在 F2FS 数据写回流程中的核心地位。  你对数据块逻辑 ID 映射关系、持久化问题以及改动影响范围的思考都非常深入，**你已经抓住了 Folio 优化在数据块处理方面最核心的挑战！**
+ [f2fs_write_single_data_page](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/fs/f2fs/data.c/f2fs_write_single_data_page.md)
 
 **1. `f2fs_do_write_data_page(struct f2fs_io_info *fio)` 函数详解**
 
