@@ -1,9 +1,12 @@
 对比着现在内核最新版本实现的`iomap_writepages`以及`write_cache_pages`,我们也尝试使用基于`writeback_iter`的方式,重写f2fs中的`f2fs_write_cache_pages`方法吧。
 ```C
-static int f2fs_write_cache_pages(struct address_space *mapping,
+static int f2fs_write_cache_folios(struct address_space *mapping,
 				  struct writeback_control *wbc,
 				  enum iostat_type io_type)
 {
+	struct iomap_writepage_ctx wpc={
+		.io_type = io_type,
+	}
 #ifdef CONFIG_F2FS_FS_COMPRESSION
 	struct inode *inode = mapping->host;
 	struct compress_ctx cc = {
@@ -63,11 +66,25 @@ static int f2fs_write_cache_pages(struct address_space *mapping,
     folio_start_writeback(folio);
     end_aligned = round_up(end_pos, i_blocksize(inode));
     }
-    /*好 现在我们这里要考虑寻找folio的脏范围了
-    先考虑压缩的情况 比如说我们考虑一个跨了4个cluster的
-    folio吧 那我们的bitmap里就有4位可以编码它 置为1的就是脏cluster 然后有个问题 我们找到了一个cluster之后啊,
-    还得判断它是不是压缩cluster呢 那就正常查找吧*/
-	/*begin f2fs_iomap_find_dirty_range*/
+    /*我们预期的f2fs_iomap_find_dirty_range函数无论是寻找脏的cluster 还是寻找脏的page区间,每次只会返回一段连续的脏区间。*/
+	while ((rlen = f2fs_iomap_find_dirty_range(folio, &pos, end_aligned))) {
+		error = f2fs_iomap_writepage_map_blocks(wpc,wbc, folio, inode,
+				pos, end_pos, rlen, &count);
+		/*我感觉可以把io_type给存到writepage_ctx之中*/
+		/*begin f2fs_iomap_writepage_map_blocks*/
+		/*注意我们已经处理了eof*/
+		/*第一步 计算实际能映射得到的区间并且我打算在这一步就将fwpc中的iomap_end中的bio分配好。*/
+		error = wpc->ops->map_blocks(wpc, inode, pos, dirty_len);
+		/*begin wpc->ops->map_blocks*/
+		struct f2fs_map_blocks map;
+		block_t start_blk=F2FS_BYTES_TO_BLK(pos);
+		block_t len_blks=F2FS_BYTES_TO_BLK(offset + length - 1) - start_blk + 1;
+		err=f2fs_map_blocks_iomap(start_blk,len_blks,&map);
+		
+		if (error)
+			break;
+		pos += rlen;
+	}
 	
 }
 ```

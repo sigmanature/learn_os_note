@@ -281,4 +281,71 @@ redirty_out:
 	return err;
 }
 ```
+我们来看一个简化版本的f2fs_write_single_data_page逻辑。我们把元数据和什么配额这些东西全部先砍掉:
+```C
+int f2fs_write_single_data_page(struct folio *folio, int *submitted,
+				struct bio **bio,
+				sector_t *last_block,
+				struct writeback_control *wbc,
+				enum iostat_type io_type,
+				int compr_blocks,
+				bool allow_balance)
+{
+ /*构造fio*/
+ /*处理cp错误和POR时期的代码*/
+ if (folio->index < end_index ||
+			f2fs_verity_in_progress(inode) ||
+			compr_blocks)
+		goto write;
+	/*处理eof的代码,这个我们不关心因为iomap_handle_eof已经处理了*/
+write:
+if (!wbc->for_reclaim)
+		need_balance_fs = true;
+	else if (has_not_enough_free_secs(sbi, 0, 0))
+		goto redirty_out;
+	else
+		set_inode_flag(inode, FI_HOT_DATA);
 
+	err = -EAGAIN;
+	if (f2fs_has_inline_data(inode)) {
+		err = f2fs_write_inline_data(inode, folio);
+		if (!err)
+			goto out;
+	}
+
+	if (err == -EAGAIN) {
+		err = f2fs_do_write_data_page(&fio);
+		if (err == -EAGAIN) {
+			f2fs_bug_on(sbi, compr_blocks);
+			fio.need_lock = LOCK_REQ;/*控制cp_rwsem锁*/
+			err = f2fs_do_write_data_page(&fio);
+		}
+	}
+
+	if (err) {
+		file_set_keep_isize(inode);
+	} else {
+		spin_lock(&F2FS_I(inode)->i_size_lock);
+		if (F2FS_I(inode)->last_disk_size < psize)
+			F2FS_I(inode)->last_disk_size = psize;
+		spin_unlock(&F2FS_I(inode)->i_size_lock);
+	}
+	done:
+	if (err && err != -ENOENT)
+		goto redirty_out;
+	/*这个分支是在f2fs_do_write_data_page中如果第二次写操作失败得到了-EAGIAN的话就会走 也就是这个函数不会无限自旋*/
+	redirty_out:
+	folio_redirty_for_writepage(wbc, folio);
+	/*
+	 * pageout() in MM translates EAGAIN, so calls handle_write_error()
+	 * -> mapping_set_error() -> set_bit(AS_EIO, ...).
+	 * file_write_and_wait_range() will see EIO error, which is critical
+	 * to return value of fsync() followed by atomic_write failure to user.
+	 */
+	if (!err || wbc->for_reclaim)
+		return AOP_WRITEPAGE_ACTIVATE;
+	folio_unlock(folio);
+	return err;
+}
+```
+那其实就是初始化了一个fio。然后以非阻塞的方式上cp_rwsem并至多重试一次。(不考虑inline data)之后更新各种数据。

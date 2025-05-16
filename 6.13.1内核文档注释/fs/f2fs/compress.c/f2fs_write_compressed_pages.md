@@ -270,3 +270,162 @@ out_free:
 	return -EAGAIN; // 返回错误码
 }
 ```
+我们看一个移除了配额和加密页逻辑之后的f2fs_write_compressed_pages函数。
+```C
+static int f2fs_write_compressed_pages(struct compress_ctx *cc,
+					int *submitted,
+					struct writeback_control *wbc,
+					enum iostat_type io_type)
+{
+	struct inode *inode = cc->inode;
+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+	struct f2fs_inode_info *fi = F2FS_I(inode);
+	/*构造fio*/
+	struct folio *folio;
+	struct dnode_of_data dn;
+	struct node_info ni;
+	struct compress_io_ctx *cic;
+	pgoff_t start_idx = start_idx_of_cluster(cc);
+	/*先算一个簇的起始idx*/
+	unsigned int last_index = cc->cluster_size - 1;
+	loff_t psize;
+	int i, err;
+	bool quota_inode = IS_NOQUOTA(inode);
+	set_new_dnode(&dn, cc->inode, NULL, NULL, 0);
+	err = f2fs_get_dnode_of_data(&dn, start_idx, LOOKUP_NODE);
+	if (err)
+		goto out_unlock_op; // 保留原有跳转标签
+	for (i = 0; i < cc->cluster_size; i++) {
+		if (data_blkaddr(dn.inode, dn.node_page,
+					dn.ofs_in_node + i) == NULL_ADDR)/*有空洞就要直接out put dnode 这有点值得在意吧*/
+			goto out_put_dnode; // 保留原有跳转标签
+	}
+	folio = page_folio(cc->rpages[last_index]);
+	psize = folio_pos(folio) + folio_size(folio);
+	err = f2fs_get_node_info(fio.sbi, dn.nid, &ni, false);
+	if (err)
+		goto out_put_dnode; // 保留原有跳转标签
+	fio.version = ni.version;
+	/*开始分配cic*/
+	cic = f2fs_kmem_cache_alloc(cic_entry_slab, GFP_F2FS_ZERO, false, sbi);
+	if (!cic)
+		goto out_put_dnode; // 保留原有跳转标签
+	cic->magic = F2FS_COMPRESSED_PAGE_MAGIC;
+	cic->inode = inode;
+	atomic_set(&cic->pending_pages, cc->valid_nr_cpages);
+	cic->rpages = page_array_alloc(cc->inode, cc->cluster_size);
+	if (!cic->rpages)
+		goto out_put_cic; // 保留原有跳转标签
+	cic->nr_rpages = cc->cluster_size;/*直接nr_rpages*/
+
+	for (i = 0; i < cc->valid_nr_cpages; i++) {
+		f2fs_set_compressed_page(cc->cpages[i], inode,
+				page_folio(cc->rpages[i + 1])->index, cic);
+		/*还是要注意,cc里面的page都是*/
+		fio.compressed_page = cc->cpages[i];
+		fio.old_blkaddr = data_blkaddr(dn.inode, dn.node_page,
+						dn.ofs_in_node + i + 1);
+		/* wait for GCed page writeback via META_MAPPING */
+		f2fs_wait_on_block_writeback(inode, fio.old_blkaddr);
+	}
+
+	set_cluster_writeback(cc);
+	for (i = 0; i < cc->cluster_size; i++)
+		cic->rpages[i] = cc->rpages[i];
+
+	for (i = 0; i < cc->cluster_size; i++, dn.ofs_in_node++) {
+		block_t blkaddr;
+
+		blkaddr = f2fs_data_blkaddr(&dn);
+		fio.page = cc->rpages[i];
+		fio.old_blkaddr = blkaddr;
+
+		/* cluster header */
+		if (i == 0) {
+			if (blkaddr == COMPRESS_ADDR)
+				fio.compr_blocks++;
+			if (__is_valid_data_blkaddr(blkaddr))
+				f2fs_invalidate_blocks(sbi, blkaddr, 1);
+			f2fs_update_data_blkaddr(&dn, COMPRESS_ADDR);
+			goto unlock_continue; // 保留原有跳转标签
+		}
+
+		if (fio.compr_blocks && __is_valid_data_blkaddr(blkaddr))
+			fio.compr_blocks++;
+
+		if (i > cc->valid_nr_cpages) {
+			if (__is_valid_data_blkaddr(blkaddr)) {
+				f2fs_invalidate_blocks(sbi, blkaddr, 1);
+				f2fs_update_data_blkaddr(&dn, NEW_ADDR);
+			}
+			goto unlock_continue; // 保留原有跳转标签
+		}
+
+		f2fs_bug_on(fio.sbi, blkaddr == NULL_ADDR);
+		fio.compressed_page = cc->cpages[i - 1];
+
+		cc->cpages[i - 1] = NULL;
+		fio.submitted = 0;
+		f2fs_outplace_write_data(&dn, &fio);
+		(*submitted)++;
+unlock_continue: // 保留原有标签
+		inode_dec_dirty_pages(cc->inode);
+		unlock_page(fio.page);
+	}
+
+	if (fio.compr_blocks)
+		f2fs_i_compr_blocks_update(inode, fio.compr_blocks - 1, false);
+	f2fs_i_compr_blocks_update(inode, cc->valid_nr_cpages, true);
+	add_compr_block_stat(inode, cc->valid_nr_cpages);
+
+	set_inode_flag(cc->inode, FI_APPEND_WRITE);
+
+	f2fs_put_dnode(&dn);
+	// 移除锁释放
+	// if (quota_inode)
+	// 	f2fs_up_read(&sbi->node_write);
+	// else
+	// 	f2fs_unlock_op(sbi);
+
+	spin_lock(&fi->i_size_lock);
+	if (fi->last_disk_size < psize)
+		fi->last_disk_size = psize;
+	spin_unlock(&fi->i_size_lock);
+
+	f2fs_put_rpages(cc);
+	page_array_free(cc->inode, cc->cpages, cc->nr_cpages);
+	cc->cpages = NULL;
+	f2fs_destroy_compress_ctx(cc, false);
+	return 0;
+
+out_destroy_crypt: // 保留原有标签
+	// 移除加密清理逻辑
+	// page_array_free(cc->inode, cic->rpages, cc->cluster_size);
+	// for (--i; i >= 0; i--) {
+	// 	if (!cc->cpages[i])
+	// 		continue;
+	// 	fscrypt_finalize_bounce_page(&cc->cpages[i]);
+	// }
+out_put_cic: // 保留原有标签
+	kmem_cache_free(cic_entry_slab, cic);
+out_put_dnode: // 保留原有标签
+	f2fs_put_dnode(&dn);
+out_unlock_op: // 保留原有标签
+	// 移除锁释放
+	// if (quota_inode)
+	// 	f2fs_up_read(&sbi->node_write);
+	// else
+	// 	f2fs_unlock_op(sbi);
+out_free: // 保留原有标签
+	for (i = 0; i < cc->valid_nr_cpages; i++) {
+		// 保留压缩页的释放
+		f2fs_compress_free_page(cc->cpages[i]);
+		cc->cpages[i] = NULL;
+	}
+	page_array_free(cc->inode, cc->cpages, cc->nr_cpages);
+	cc->cpages = NULL;
+	// 注意：由于移除了部分错误处理，这里的返回码可能不完全反映实际情况
+	return -EAGAIN;
+}
+
+```
