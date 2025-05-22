@@ -291,6 +291,11 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 	loff_t psize;
 	int i, err;
 	bool quota_inode = IS_NOQUOTA(inode);
+	/*不考虑配额inode情况的上cp_rwsem读锁逻辑*/
+	if (!f2fs_trylock_op(sbi))
+	{
+		goto out_free;
+	}
 	set_new_dnode(&dn, cc->inode, NULL, NULL, 0);
 	err = f2fs_get_dnode_of_data(&dn, start_idx, LOOKUP_NODE);
 	if (err)
@@ -415,7 +420,7 @@ out_unlock_op: // 保留原有标签
 	// if (quota_inode)
 	// 	f2fs_up_read(&sbi->node_write);
 	// else
-	// 	f2fs_unlock_op(sbi);
+	f2fs_unlock_op(sbi);
 out_free: // 保留原有标签
 	for (i = 0; i < cc->valid_nr_cpages; i++) {
 		// 保留压缩页的释放

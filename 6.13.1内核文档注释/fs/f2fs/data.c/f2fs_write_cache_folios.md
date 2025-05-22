@@ -67,7 +67,7 @@ static int f2fs_write_cache_folios(struct address_space *mapping,
     end_aligned = round_up(end_pos, i_blocksize(inode));
     }
     /*我们预期的f2fs_iomap_find_dirty_range函数无论是寻找脏的cluster 还是寻找脏的page区间,每次只会返回一段连续的脏区间。*/
-	while ((rlen = f2fs_iomap_find_dirty_range(folio, &pos, end_aligned))) {
+	while ((rlen = iomap_find_dirty_range(folio, &pos, end_aligned))) {
 		error = f2fs_iomap_writepage_map_blocks(wpc,wbc, folio, inode,
 				pos, end_pos, rlen, &count);
 		/*我感觉可以把io_type给存到writepage_ctx之中*/

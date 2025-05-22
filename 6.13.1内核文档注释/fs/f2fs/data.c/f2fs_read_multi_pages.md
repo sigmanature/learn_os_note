@@ -143,7 +143,8 @@ skip_reading_dnode: // Label to jump to if using extent cache or after reading d
 
 	// Allocate the Decompression I/O Context 
 	dic = f2fs_alloc_dic(cc);
-    /*分配解压缩上下文的时候,会将压缩上下文的所有原始数据page拷贝过来*/
+    /*分配解压缩上下文的时候,会将压缩上下文的所有原始数据page拷贝过来 
+	需要重点关注的一点是,dic的remaining_pages就是cc->nr_cpages 和rpages个数无关*/
 	if (IS_ERR(dic)) { // Check for allocation errors
 		ret = PTR_ERR(dic);
 		goto out_put_dnode; // Jump to cleanup
