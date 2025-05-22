@@ -4,9 +4,6 @@ static int f2fs_write_cache_folios(struct address_space *mapping,
 				  struct writeback_control *wbc,
 				  enum iostat_type io_type)
 {
-	struct iomap_writepage_ctx wpc={
-		.io_type = io_type,
-	}
 #ifdef CONFIG_F2FS_FS_COMPRESSION
 	struct inode *inode = mapping->host;
 	struct compress_ctx cc = {
@@ -27,6 +24,7 @@ static int f2fs_write_cache_folios(struct address_space *mapping,
 	};
 #endif
     struct folio* folio=NULL;
+    struct bio* bio=NULL;
     int error;
     if (get_dirty_pages(mapping->host) <=
 	    SM_I(F2FS_M_SB(mapping))->min_hot_blocks)
@@ -68,19 +66,52 @@ static int f2fs_write_cache_folios(struct address_space *mapping,
     }
     /*我们预期的f2fs_iomap_find_dirty_range函数无论是寻找脏的cluster 还是寻找脏的page区间,每次只会返回一段连续的脏区间。*/
 	while ((rlen = iomap_find_dirty_range(folio, &pos, end_aligned))) {
-		error = f2fs_iomap_writepage_map_blocks(wpc,wbc, folio, inode,
+		error = f2fs_write_folio_dirty_range(bio,wbc, folio, inode,
 				pos, end_pos, rlen, &count);
-		/*我感觉可以把io_type给存到writepage_ctx之中*/
-		/*begin f2fs_iomap_writepage_map_blocks*/
-		/*注意我们已经处理了eof*/
-		/*第一步 计算实际能映射得到的区间并且我打算在这一步就将fwpc中的iomap_end中的bio分配好。*/
-		error = wpc->ops->map_blocks(wpc, inode, pos, dirty_len);
-		/*begin wpc->ops->map_blocks*/
-		struct f2fs_map_blocks map;
-		block_t start_blk=F2FS_BYTES_TO_BLK(pos);
-		block_t len_blks=F2FS_BYTES_TO_BLK(offset + length - 1) - start_blk + 1;
-		err=f2fs_map_blocks_iomap(start_blk,len_blks,&map);
-		
+		/*begin f2fs_write_folio_dirty_range*/
+		err=f2fs_write_single_folio(folio,&count,bio,0,io_type,0,true,pos,end_pos);
+		/*begin f2fs_write_single_folio*/
+		struct inode *inode = folio->mapping->host;
+		struct page *page = NULL;
+		struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+		loff_t i_size = i_size_read(inode);
+		const pgoff_t end_index = ((unsigned long long)i_size)
+							>> PAGE_SHIFT;
+		pgoff_t start=pos>>PAGE_SHIFT;
+		pgoff_t end=end_pos>>PAGE_SHIFT;
+		for (int i=start;i<end;++i)
+		{
+                   page=folio_page(folio,i);
+		   struct f2fs_io_info fio = {
+		.sbi = sbi,
+		.ino = inode->i_ino,
+		.type = DATA,
+		.op = REQ_OP_WRITE,
+		.op_flags = wbc_to_write_flags(wbc),
+		.old_blkaddr = NULL_ADDR,
+		.page = page,
+		.encrypted_page = NULL,
+		.submitted = 0,
+		.compr_blocks = compr_blocks,
+		.need_lock = compr_blocks ? LOCK_DONE : LOCK_RETRY,
+		.meta_gc = f2fs_meta_inode_gc_required(inode) ? 1 : 0,
+		.io_type = io_type,
+		.io_wbc = wbc,
+		.bio = bio,
+		.last_block = last_block,
+	};
+		/*任何其他逻辑统统保持不变*/
+		if (err == -EAGAIN) {
+		err = f2fs_do_write_data_page(&fio);
+		if (err == -EAGAIN) {
+			f2fs_bug_on(sbi, compr_blocks);
+			fio.need_lock = LOCK_REQ;
+			err = f2fs_do_write_data_page(&fio);
+		}
+	}
+
+		}
+		/*end f2fs_write_single_folio*/
 		if (error)
 			break;
 		pos += rlen;
