@@ -34,18 +34,32 @@ retry:
 		return ret;
 
 	/* keep folio reference to avoid page reclaim */
-	for (i = 0; i < cc->cluster_size; i++) {
+	for (i = start_idx; i < cc->cluster_size; ) {
 		folio = f2fs_filemap_get_folio(mapping, start_idx + i,
 				fgp_flag, GFP_NOFS);
 		if (IS_ERR(folio)) {
 			ret = PTR_ERR(folio);
 			goto unlock_pages;
 		}
-
-		if (folio_test_uptodate(folio))
-			f2fs_folio_put(folio, true);
-		else
-			f2fs_compress_ctx_add_page(cc, folio);
+		bool needs_read = false;
+		pgoff_t idx_in_folio=offset_in_folio(folio,(start_idx+i)<<PAGE_SHIFT);
+		for (; idx_in_folio < folio_nr_pages(folio); ++idx_in_folio) {
+			
+			struct f2fs_iomap_folio_state* fifs=folio->private;
+			if (!ifs_block_is_uptodate(folio, folio_idx)) {
+				needs_read = true;
+				break;
+			}
+			
+		}
+		if(needs_read)
+		{
+			f2fs_compress_ctx_add_folio()
+		}
+		// if (folio_test_uptodate(folio))
+		// 	f2fs_folio_put(folio, true);
+		// else
+		// 	f2fs_compress_ctx_add_page(cc, folio);
 	}
 
 	if (!f2fs_cluster_is_empty(cc)) {
