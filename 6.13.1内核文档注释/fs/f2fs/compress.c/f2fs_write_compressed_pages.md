@@ -102,7 +102,7 @@ static int f2fs_write_compressed_pages(struct compress_ctx *cc,
 		// 将压缩页与 inode、对应的原始页索引和 cic 关联起来
 		f2fs_set_compressed_page(cc->cpages[i], inode,
 				page_folio(cc->rpages[i + 1])->index, cic);
-		/*还是要注意,cc里面的page都是*/ // 注意：cc->cpages 存储的是压缩/加密后的数据页
+		 // 从cc->rpages[]中的第二个开始,是因为cc->rpages[0]对应的是压缩头,这不是一个真正的数据块。
 		fio.compressed_page = cc->cpages[i]; // 将当前压缩页设置到 fio 中
 
 		// 获取当前压缩页对应的原始页在文件中的旧块地址
