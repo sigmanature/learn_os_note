@@ -1,7 +1,8 @@
 linux truncate系统调用会走到具体文件系统inode->ops中的setattr函数调用。从名字上看不出来,但确实这个函数执行了实际的truncate操作。
 **相关函数**
 * [page_cache_ra_order](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/page_cache_ra_order.md)
-* [truncate_setsize](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/readahead.c/truncate_setsize.md)
+* [truncate_setsize](https://github.com/sigmanature/learn_os_note/blob/main/6.13.1%E5%86%85%E6%A0%B8%E6%96%87%E6%A1%A3%E6%B3%A8%E9%87%8A/mm/truncate
+.c/truncate_setsize.md)
 ```C
 // Main entry point for setting inode attributes in F2FS
 int f2fs_setattr(struct mnt_idmap *idmap, struct dentry *dentry,
