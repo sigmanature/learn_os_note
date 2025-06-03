@@ -7,7 +7,7 @@ struct folio *__filemap_get_folio(struct address_space *mapping, pgoff_t index,
 	struct folio *folio;
 
 repeat:
-	folio = filemap_get_entry(mapping, index);
+	folio = filemap_get_entry(mapping, index);/*注意这个函数里面会调用folio_try_get增加其引用计数*/
 	if (xa_is_value(folio))
 		folio = NULL;
 	if (!folio)

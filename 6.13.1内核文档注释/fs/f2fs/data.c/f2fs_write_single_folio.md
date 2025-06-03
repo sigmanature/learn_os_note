@@ -250,10 +250,8 @@ static int f2fs_write_cache_folios(struct address_space *mapping,
 				// f2fs_compress_ctx_add_folio does not do folio_get.
 				// The folio is locked. cc needs a ref.
 				folio_get(folio); // cc takes a reference
-				f2fs_compress_ctx_add_folio(
-					&cc, folio,
-					pos,
-					r_len);
+				f2fs_compress_ctx_add_folio(&cc, folio,pos,r_len);
+				
 				// The ref taken by folio_get will be put by f2fs_put_rpages_wbc (via f2fs_write_multi_pages)
 
 				if (f2fs_cluster_is_full(&cc)) {
