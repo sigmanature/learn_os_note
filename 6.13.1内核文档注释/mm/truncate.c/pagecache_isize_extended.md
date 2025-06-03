@@ -2,8 +2,8 @@
 /**
  * pagecache_isize_extended - update pagecache after extension of i_size
  * @inode:	inode for which i_size was extended
- * @from:	original inode size
- * @to:		new inode size
+ * @from:	original inode size 参数名称虽然叫from但是基本上传的都是旧的inode代表的文件大小
+ * @to:		new inode size 也是一样 基本上是新的inode文件大小
  *
  * Handle extension of inode size either caused by extending truncate or
  * by write starting after current i_size.  We mark the page straddling
