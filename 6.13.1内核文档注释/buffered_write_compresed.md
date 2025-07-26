@@ -1,0 +1,19 @@
+## 功能背景（就不和下面的重大问题分析撞车了)
+我们已经决定将整个buffered write路径迁移往iomap了,因为经过我们前面的分析我们知道这是最无包袱的支持large folios的方式。而和buffered read和page writeback
+不同的一点是,iomap_buffered_write除了提供iomap_begin和iomap_end,还提供了我们可以自己定制化获取folio逻辑和释放folio逻辑的__iomap_get_folio和__iomap_put_folio。通过
+分析,我发现用iomap buffered write实现压缩文件的buffered write是可能的并且函数栈的调用路径可以做到更少的调用栈开销。
+## 重大问题剖析
+初赛时候我们的设计方案
+是我们将改造成支持large folios的prepare write begin逻辑 
+也即原先的buffered write的逻辑 给拿过来填入到iomap_begin之中。然后__iomap_get_folio之中我们和原代码逻辑一样,从压缩文件上下文中根据我们的索引取出里面的page转化为folio
+结构体。但是因为iomap_get_folio的策略和我们在iomap_folio_state中存储的length是只被限制在一个簇之中 这里我们要贴出iomap_get_folio中传入阶数hint的地方了。
+···C
+iomap_get_folio
+···
+所以我发现我们几乎是严重限制了large folios针对buffered write的性能 因为我们大大地限制了其能分配的folio的上限
+
+## 方案设计
+我们切换了视角 不再是以cluster的视角出发 一点一点用folio将cluster给填满 转而切换为从一个大folio的视角出发 不断地用cluster去填充它特别强调这段是我们自己的原创算法
+然后我们将整个处理好的folio就保持着上锁的状态 然后将其放到iomap->private之中 送入iomap的主要处理逻辑。注意在我们iomap_begin中这样处理的逻辑 最终总是会让我们拿到的这个folio全为uptodate
+这里面还有个非常重要的点。f2fs内提交io的代码全部都是异步的。但是我们这个地方和所有的 iomap buffered write一样是必须等到整个folio全部给读完 直到全部uptodate 我们才能对其进行写入，
+不然就会出现
