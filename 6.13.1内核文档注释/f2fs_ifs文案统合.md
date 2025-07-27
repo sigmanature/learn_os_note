@@ -1,4 +1,4 @@
-## 问题背景
+## 功能背景
 保持不变
 ## 重大问题分析
 我们已经在问题背景中分析过f2fs_iomap_folio_state的必要性 没有它导致的问题触发现象,就是我们在任何需要使用f2fs_iomap_folio_state地方的代码,以及iomap框架中需要访问iomap_folio_state地方的代码,会将其误认为是一个指针值 导致内核在形式上抛出空指针解引用的异常出来。而实际我们将我们的f2fs_iomap_folio_state集成到我们的代码的时候,我发现真是牵一发而动全身。任何原先使用旧的set_page_private/get_page_private的代码路径全部都需要更改。这里面涉及到的代码路径不光有普通数据folio 还有元数据folio中存储自己private字段的地方也需要替换成我们新设计的接口。
