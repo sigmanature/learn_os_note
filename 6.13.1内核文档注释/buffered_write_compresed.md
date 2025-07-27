@@ -13,6 +13,141 @@ iomap_get_folio
 所以我发现我们几乎是严重限制了large folios针对buffered write的性能 因为我们大大地限制了其能分配的folio的上限
 
 ## 方案设计
+```C
+static int f2fs_buffered_write_iomap_begin(struct inode *inode, loff_t pos, loff_t length,
+				unsigned flags, struct iomap *iomap,
+				struct iomap *srcmap)
+{
+	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+	struct f2fs_map_blocks map = {};
+	struct folio *ifolio = NULL;
+	int err = 0;
+	iomap->offset = pos; 
+	iomap->bdev = sbi->sb->s_bdev; // Default block device
+	iomap->dax_dev = NULL;
+	iomap->private = NULL;
+	iomap->folio_ops = &f2fs_iomap_folio_ops;
+	iomap->flags = 0; 
+#ifdef CONFIG_F2FS_FS_COMPRESSION
+	pgoff_t index = pos >> PAGE_SHIFT;
+	struct compress_ctx cc = {
+			.inode = inode,
+			.log_cluster_size = F2FS_I(inode)->i_log_cluster_size,
+			.cluster_size = F2FS_I(inode)->i_cluster_size,
+			.cluster_idx = cluster_i_idx(inode,index),
+		};
+	if (pos<i_size_read(inode)&&f2fs_compressed_file(inode)&&f2fs_is_compressed_cluster(inode,index)) {
+		length=min_t(loff_t,length,i_size_read(inode)-pos);
+		struct iomap_iter* iter=container_of(iomap,struct iomap_iter,iomap);
+		struct bio*bio=NULL;
+		loff_t new_pos = pos;
+		size_t poff;
+		size_t plen;
+		pgoff_t start_idx = start_idx_of_cluster(&cc);//Aligned to cluster's start page index
+		pgoff_t end_idx = ((pos+length)>>PAGE_SHIFT)-1;
+		end_idx = end_idx_of_cluster(&cc,end_idx);//Aligned end idx to the last cluster's end
+		loff_t aligned_len=(end_idx-start_idx+1)<<PAGE_SHIFT;
+		#ifdef CONFIG_F2FS_DEBUG_PRINT
+		ssleep(1);
+		f2fs_err(F2FS_I_SB(inode),"current state:pos%d,end_idx%d",pos,end_idx);
+		FUNC(f2fs_check_inode_folios_writeback, inode);
+		#endif // DEBUG
+		struct folio*folio=iomap_get_folio(iter,start_idx<<PAGE_SHIFT,aligned_len);
+		if (folio_test_uptodate(folio))
+		{
+			iomap->length+=min_t(unsigned int,folio_nr_pages(folio)<<PAGE_SHIFT,length);
+			goto setup_iomap;
+		}
+		struct f2fs_iomap_folio_state* fifs=f2fs_ifs_alloc(folio, iter->flags,false);
+		if(folio_order(folio)>0&&fifs)
+		{
+			unsigned long flags;
+			spin_lock_irqsave(&fifs->state_lock, flags);
+			fifs->read_bytes_pending+=1;//Add a bias for read bytes_pending so folio_end_read will never be called
+			spin_unlock_irqrestore(&fifs->state_lock, flags);
+		}
+		iomap_adjust_read_range(inode,folio,&new_pos,aligned_len,&poff, &plen);
+		end_idx =min(end_idx,folio->index+folio_nr_pages(folio));
+		for (int i=cluster_idx(&cc,new_pos>>PAGE_SHIFT)<<cc.log_cluster_size;;)
+		{
+    		if (cc.nr_cpages==NULL)
+			{
+			err = f2fs_init_compress_ctx(&cc);
+			if (err < 0)
+			goto out_unlock;
+			}
+    		loff_t add_len=min(cc.cluster_size,end_idx-i+1)<<PAGE_SHIFT;
+    		do_read_multi_folios(&cc,folio,i<<PAGE_SHIFT,add_len,&bio,0,true);
+			iomap->length+=add_len;
+    		i+=cc.cluster_size;
+    		if(i>=end_idx||!f2fs_is_compressed_cluster(cc.inode, i))
+        		break;
+		}
+		bool last_cluster_is_partial=false;
+		if(f2fs_cluster_is_partial_full(&cc))
+		{
+			last_cluster_is_partial=true;
+			for (pgoff_t idx = end_idx+1; idx < end_idx_of_cluster(&cc,end_idx); idx++) {
+				struct folio *extra_folio = iomap_get_folio(iter, (loff_t)idx << PAGE_SHIFT, PAGE_SIZE);
+				if (IS_ERR(extra_folio)) { 
+					f2fs_folio_put(extra_folio,true);
+				 }
+				do_read_multi_folios(&cc, extra_folio, (loff_t)idx << PAGE_SHIFT, PAGE_SIZE, &bio, NULL, true);
+			}
+		}
+		if (bio)
+			f2fs_submit_read_bio(sbi, bio, DATA);
+		if (folio_order(folio)>0&&fifs) {
+			/*We use read_bytes_pending to wait for the whole folio to be read
+			We didn't use submit_bio_wait because folio can cross multi bios
+			*/
+			
+			for(;;)
+			{
+				bool done;
+				unsigned long flags;
+				spin_lock_irqsave(&fifs->state_lock, flags);
+				done = (fifs->read_bytes_pending == F2FS_IFS_MAGIC+1);
+				spin_unlock_irqrestore(&fifs->state_lock, flags);
+				if (done)
+					break;
+				f2fs_io_schedule_timeout(DEFAULT_IO_TIMEOUT);
+			}
+		}	
+			if (last_cluster_is_partial) {
+				// 如果最后一个 cluster 是部分填充的，需要额外检查整个 cluster 的状态
+				pgoff_t cluster_start = cluster_idx(&cc, index)<<cc.log_cluster_size;
+				err = f2fs_wait_cluster_uptodate(inode, end_idx+1, cc.cluster_size);
+				if (err) goto out_clean_bias;
+			}
+		if(folio_order(folio)>0&&fifs)
+		{
+			spin_lock_irqsave(&fifs->state_lock, flags);
+			fifs->read_bytes_pending-=1;//Add a bias for read bytes_pending so folio_end_read will never be called
+			spin_unlock_irqrestore(&fifs->state_lock, flags);
+		}
+		setup_iomap:
+		iomap->private = folio; 
+		iomap->type = IOMAP_MAPPED; 
+		iomap->addr = IOMAP_NULL_ADDR; 
+		iomap->offset = pos;
+		iomap->bdev = sbi->sb->s_bdev;
+		iomap->dax_dev = NULL;
+		iomap->flags = 0;
+		return 0;
+		out_unlock:
+		folio_unlock(folio);
+		folio_put(folio);
+		out_clean_bias:
+		if (fifs)
+		{
+			spin_lock_irqsave(&fifs->state_lock, flags);
+			fifs->read_bytes_pending-=1;
+			spin_unlock_irqrestore(&fifs->state_lock, flags);
+		}
+		return err;
+		}
+```
 我们切换了视角 不再是以cluster的视角出发 一点一点用folio将cluster给填满 转而切换为从一个大folio的视角出发 不断地用cluster去填充它特别强调这段是我们自己的原创算法
 然后我们将整个处理好的folio就保持着上锁的状态 然后将其放到iomap->private之中 送入iomap的主要处理逻辑。注意在我们iomap_begin中这样处理的逻辑 最终总是会让我们拿到的这个folio全为uptodate
 这里面还有个非常重要的点。f2fs内提交io的代码全部都是异步的。但是我们这个地方和所有的 iomap buffered write一样是必须等到整个folio全部给读完 直到全部uptodate 我们才能对其进行写入，
