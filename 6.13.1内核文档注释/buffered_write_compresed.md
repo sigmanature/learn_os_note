@@ -7,9 +7,9 @@
 是我们将改造成支持large folios的prepare write begin逻辑 
 也即原先的buffered write的逻辑 给拿过来填入到iomap_begin之中。然后__iomap_get_folio之中我们和原代码逻辑一样,从压缩文件上下文中根据我们的索引取出里面的page转化为folio
 结构体。但是因为iomap_get_folio的策略和我们在iomap_folio_state中存储的length是只被限制在一个簇之中 这里我们要贴出iomap_get_folio中传入阶数hint的地方了。
-···C
+```C
 iomap_get_folio
-···
+```
 所以我发现我们几乎是严重限制了large folios针对buffered write的性能 因为我们大大地限制了其能分配的folio的上限
 
 ## 方案设计
