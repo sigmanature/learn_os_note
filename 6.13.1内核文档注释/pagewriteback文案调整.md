@@ -90,6 +90,8 @@ int f2fs_submit_page_bio(struct f2fs_io_info *fio)
 
 	f2fs_set_bio_crypt_ctx(bio, fio_folio->mapping->host,
 			fio_folio->index, fio, GFP_NOIO);
-	bio_add_folio_nofail(bio, data_folio, PAGE_SIZE, folio_page_idx(data_folio,fio->encrypted_page ?fio->encrypted_page:fio->page)<<PAGE_SHIFT);//请标红
-必要的时候 请使用tabular来进行跨行。
+	bio_add_folio_nofail(bio, data_folio, PAGE_SIZE, folio_page_idx(data_folio,fio->encrypted_page ?fio->encrypted_page:fio->page)<<PAGE_SHIFT);
+//请标红
+//必要的时候 请使用tabular来进行跨行。
 ```
+我们将folio_size改回PAGE_SIZE,并且使用folio_page_idx来精准地将对应的folio中的子页给添加进去。
