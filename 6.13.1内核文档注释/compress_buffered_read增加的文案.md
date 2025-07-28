@@ -87,6 +87,7 @@ void f2fs_compress_ctx_add_folio(struct compress_ctx *cc, struct folio *folio,
 然后我原先的文案里,光顾着说让read_bytes_pending增加的事情了,实际上还有read_bytes_pending,需要进行减少的部分我没加上去。
 我将这部分代码的定义也放出来。
 首先f2fs读io结束的直接回调函数是
+```C
 static void f2fs_read_end_io(struct bio *bio)
 {
 	struct f2fs_sb_info *sbi = F2FS_P_SB(bio_first_page_all(bio));
@@ -124,7 +125,9 @@ static void f2fs_read_end_io(struct bio *bio)
 
 	f2fs_verify_and_finish_bio(bio, intask);
 }
+```
 普通页的真正的结束路径是里面的
+```C
 static void f2fs_finish_read_bio(struct bio *bio, bool in_task)
 {
 	struct folio_iter fi;
@@ -151,7 +154,9 @@ static void f2fs_finish_read_bio(struct bio *bio, bool in_task)
 		mempool_free(ctx, bio_post_read_ctx_pool);
 	bio_put(bio);
 }
+```
 而针对压缩文件的路径则是
+```C
 __attribute__((optimize("O0")))
 void f2fs_decompress_end_io(struct decompress_io_ctx *dic, bool failed,
 				bool in_task)
@@ -223,7 +228,9 @@ void f2fs_decompress_end_io(struct decompress_io_ctx *dic, bool failed,
 	 */
 	f2fs_put_dic(dic, in_task);
 }
+```
 这些代码不但要详细地讲到我进行的large folios相关改动,还得讲到最终取消掉read_bytes_pending的地方。你可能没看到。但是它在这里:
+```C
 void f2fs_iomap_finish_folio_read(struct folio *folio, size_t off,size_t len, int error)
 {
 	// #ifdef CONFIG_F2FS_DEBUG_PRINT
@@ -264,4 +271,102 @@ void f2fs_iomap_finish_folio_read(struct folio *folio, size_t off,size_t len, in
 			folio_end_read(folio, !error);
 		}
 }
+```
 是我抽象出来的一个共通的函数。
+请十分详细地缕清这些函数的逻辑并详细地阐释他们。为了给你一个完全的上下文,我给你一个全部的函数上下文定义:
+```C
+__attribute__((optimize("O0"))) 
+static int f2fs_compress_readpage_iter(struct iomap_iter *iter,struct f2fs_readpage_ctx *ctx)
+{
+	loff_t pos = iter->pos;
+	loff_t length = iomap_length(iter);
+	struct folio *folio = ctx->cur_folio;
+	struct inode* inode=folio->mapping->host;
+	struct f2fs_iomap_folio_state *fifs;
+	size_t poff, plen;
+	int ret;
+#ifdef CONFIG_F2FS_FS_COMPRESSION
+	bool is_compressed =
+		f2fs_is_compressed_cluster(inode, pos >> PAGE_SHIFT);
+#endif
+	/* zero post-eof blocks as the page may be mapped */
+	fifs = f2fs_ifs_alloc(folio, iter->flags,false);
+	iomap_adjust_read_range(iter->inode, folio, &pos, length, &poff, &plen);
+	if (plen == 0)
+		goto done;
+	if(!is_compressed)
+	{
+		if (iomap_block_needs_zeroing(iter, pos)) {
+			folio_zero_range(folio, poff, plen);
+			iomap_set_range_uptodate(folio, poff, plen);
+			goto done;
+		}
+	}
+	if (is_compressed) {
+		ret = f2fs_do_read_multi_folios(ctx,pos,plen);
+	} else {
+		ret = f2fs_do_read_single_folio_iomap(iter, ctx, pos, plen, poff);
+	}
+	if(ret)
+		return ret;
+done:
+	length = pos - iter->pos + plen;
+	return iomap_iter_advance(iter, &length);
+}
+__attribute__((optimize("O0")))
+static loff_t f2fs_compress_readahead_iter(struct iomap_iter *iter,struct f2fs_readpage_ctx *ctx)
+{
+	int ret = 0;
+	while (iomap_length(iter)) {
+		if (ctx->cur_folio &&offset_in_folio(ctx->cur_folio, iter->pos) == 0) {
+			if (!ctx->cur_folio_in_bio &&
+			    !ctx->cur_folio_in_compress_ctx)
+				folio_unlock(ctx->cur_folio);
+			ctx->cur_folio = NULL;
+		}
+		if (!ctx->cur_folio) {
+			ctx->cur_folio = readahead_folio(ctx->rac);
+			ctx->cur_folio_in_bio = false;
+			ctx->cur_folio_in_compress_ctx=false;
+		}
+		ret = f2fs_compress_readpage_iter(iter, ctx);
+		if (ret)
+			return ret;
+	}
+	return 0;
+}
+__attribute__((optimize("O0")))
+int f2fs_compress_iomap_readahead(struct inode *inode,
+				  struct readahead_control *rac)
+{
+	struct f2fs_readpage_ctx ctx;
+	int ret = 0;
+	f2fs_init_readpage_ctx(&ctx, rac);
+	struct iomap_iter iter = {
+		.inode = inode,
+		.pos = readahead_pos(rac),
+		.len = readahead_length(rac),
+	};
+	while ((ret = iomap_iter(
+			&iter, &f2fs_buffered_read_compress_iomap_ops)) > 0) {
+		iter.status = f2fs_compress_readahead_iter(&iter, &ctx);
+	}
+	if (ctx.bio) {
+		f2fs_submit_read_bio(
+			F2FS_I_SB(inode), ctx.bio,
+			 DATA);
+		ctx.bio = NULL;
+	}
+	if (ctx.cur_folio && !ctx.cur_folio_in_bio &&
+	    !ctx.cur_folio_in_compress_ctx) {
+		folio_unlock(ctx.cur_folio);
+	}
+	// f2fs_destroy_readpage_ctx(&ctx);
+	#ifdef CONFIG_F2FS_DEBUG_PRINT
+	ssleep(1);
+	FUNC(f2fs_check_inode_folios_writeback, inode);
+	#endif
+	return ret;	
+}
+```
+我包裹在debug print的代码你知道是调试代码就行了。
