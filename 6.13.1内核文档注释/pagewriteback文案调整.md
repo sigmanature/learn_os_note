@@ -12,4 +12,5 @@ find dirty range和提交io的逻辑 因此 我们必须手动将这些folio 不
 因此我们改为传递了folio_index+folio_page_idx(folio,fio->page)
 3.下一个重大问题是 f2fs_submit_page_bio也是因为内核的改动 导致其将folio给添加到bio的时候,我们想添加的是某个子page,但是这行代码错误地直接将整个folio_size给添加进去了,导致bio中记录的信息
 是错误的。所以我们的改动 还是加上了具体我们要将folio的哪个子部分给添加到bio之中。
-具体的解决方案代码我们在后面的部分给出吧。
+## 解决方案
+针对问题1.
