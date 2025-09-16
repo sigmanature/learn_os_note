@@ -81,7 +81,13 @@ static int balance_dirty_pages(struct bdi_writeback *wb,
 		if (mdtc) {
 			balance_domain_limits(mdtc, strictlimit);
 		}
-
+		// 我们来重点解析一下balance_domain_limits函数。这个函数会将所有和脏页平衡有关的参数
+		// 全部给填充到dtc结构体里。
+		// bdl函数一共顺序调用三个函数,首先是domain_dirty_avail
+		// 不考虑cgroup的情况之下,dtc的dirty字段直接被设置为global_node_page_state(NR_FILE_DIRTY);
+		// 从字面意思我们假定就是当前文件的脏页。avali字段被设置为global_dirtyable_memory
+		// 接下来是第二个函数调用,domain_dirty_limits。先不在乎其逻辑,它就是设置thresh和bg_thresh的
+		// 第三个函数调用
 		// 2.3 检查是否需要启动后台回写
 		// 如果不在笔记本模式，且脏页数超过后台阈值，就唤醒flusher线程
 		if (!laptop_mode && nr_dirty > gdtc->bg_thresh &&
